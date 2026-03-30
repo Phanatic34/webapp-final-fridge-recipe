@@ -181,14 +181,6 @@ function scoreRecipe(
   };
 }
 
-function sortScore(r: RecommendationResponse): number {
-  return (
-    r.match_ratio +
-    (r.uses_near_expiry ? 0.15 : 0) -
-    0.05 * r.missing_count
-  );
-}
-
 // ─── Routes ────────────────────────────────────────────────────
 
 /**
@@ -208,7 +200,20 @@ router.get("/recommended", async (_req: Request, res: Response) => {
       .map((r) => scoreRecipe(r, fridge.nameSet, fridge.nearExpirySet))
       .filter((r) => r.match_count > 0);
 
-    scored.sort((a, b) => sortScore(b) - sortScore(a));
+    // Plan ranking: uses_near_expiry DESC, then match_ratio DESC, then missing_count ASC
+    scored.sort((a, b) => {
+      if (a.uses_near_expiry !== b.uses_near_expiry) {
+        return a.uses_near_expiry ? -1 : 1;
+      }
+      if (a.match_ratio !== b.match_ratio) {
+        return b.match_ratio - a.match_ratio;
+      }
+      if (a.missing_count !== b.missing_count) {
+        return a.missing_count - b.missing_count;
+      }
+      // Stable tie-breaker for deterministic demos
+      return a.recipe.id - b.recipe.id;
+    });
 
     res.json({ recommendations: scored });
   } catch (e) {
