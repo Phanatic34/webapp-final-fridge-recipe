@@ -1,4 +1,4 @@
-import type { Recipe, RecipeDetail } from "../types/recipe";
+import type { Recipe, RecipeDetail, RecipeRecommendation } from "../types/recipe";
 import { api } from "./client";
 
 export type RecipeListParams = {
@@ -24,4 +24,13 @@ export async function fetchRecipe(id: number): Promise<RecipeDetail> {
     `/api/recipes/${id}`
   );
   return data.recipe;
+}
+
+export async function fetchRecommendedRecipes(): Promise<{
+  recommendations: RecipeRecommendation[];
+}> {
+  const { data } = await api.get<{ recommendations: RecipeRecommendation[] }>(
+    "/api/recipes/recommended"
+  );
+  return data;
 }

@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import { useRecipesList } from "../hooks/useRecipes";
-import type { Recipe } from "../types/recipe";
+import { useRecommendedRecipesList } from "../hooks/useRecipes";
+import type { RecipeRecommendation } from "../types/recipe";
 
 const CUISINE_OPTIONS = [
   "all",
@@ -32,42 +32,80 @@ function DifficultyBadge({ difficulty }: { difficulty: string | null }) {
   );
 }
 
-function RecipeCard({ recipe }: { recipe: Recipe }) {
+function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
+  const ring = rec.uses_near_expiry
+    ? "ring-2 ring-amber-300 bg-amber-50/20"
+    : "ring-1 ring-slate-200 bg-white";
+
+  const matchLabel = `${rec.match_count}/${rec.total_ingredients} ingredients`;
+  const missingLabel =
+    rec.missing_ingredients.length > 0
+      ? `Missing: ${rec.missing_ingredients.join(", ")}`
+      : "No missing ingredients";
+
   return (
     <Link
-      to={`/recipes/${recipe.id}`}
-      className="group flex flex-col rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-emerald-300"
+      to={`/recipes/${rec.recipe.id}`}
+      className={`group flex flex-col rounded-xl p-4 shadow-sm transition ${ring} hover:shadow-md`}
     >
-      <div className="flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-lg font-semibold leading-tight text-slate-900 group-hover:text-emerald-700">
-            {recipe.title}
+            {rec.recipe.title}
           </h3>
-          {recipe.cuisine && (
+          {rec.recipe.cuisine && (
             <span className="shrink-0 rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium capitalize text-indigo-800">
-              {recipe.cuisine}
+              {rec.recipe.cuisine}
             </span>
           )}
         </div>
 
-        {recipe.description && (
+        {rec.recipe.description && (
           <p className="line-clamp-2 text-sm text-slate-600">
-            {recipe.description}
+            {rec.recipe.description}
           </p>
         )}
 
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
-          <DifficultyBadge difficulty={recipe.difficulty} />
-          {recipe.cooking_time !== null && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
+            {matchLabel}
+          </span>
+          <DifficultyBadge difficulty={rec.recipe.difficulty} />
+        </div>
+
+        {rec.uses_near_expiry && rec.near_expiry_ingredients.length > 0 && (
+          <p className="text-sm text-amber-900">
+            Near-expiry boost:{" "}
+            <span className="font-medium">
+              {rec.near_expiry_ingredients.join(", ")}
+            </span>
+          </p>
+        )}
+
+        <p className="text-xs text-slate-600">{missingLabel}</p>
+
+        <div className="pt-2">
+          {rec.explanation.slice(0, 3).map((line, i) => (
+            <p key={i} className="text-sm text-slate-700">
+              {line}
+            </p>
+          ))}
+        </div>
+
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
+          {rec.recipe.cooking_time !== null && (
             <span className="text-xs text-slate-500">
-              {recipe.cooking_time} min
+              {rec.recipe.cooking_time} min
             </span>
           )}
-          {recipe.servings !== null && (
+          {rec.recipe.servings !== null && (
             <span className="text-xs text-slate-500">
-              {recipe.servings} servings
+              {rec.recipe.servings} servings
             </span>
           )}
+          <span className="ml-auto text-xs text-slate-500">
+            Match: {Math.round(rec.match_ratio * 100)}%
+          </span>
         </div>
       </div>
     </Link>
@@ -76,10 +114,14 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
 
 export default function RecipesPage() {
   const [cuisine, setCuisine] = useState("all");
+  const { data, isLoading, isError, error, refetch } =
+    useRecommendedRecipesList();
 
-  const params = useMemo(() => ({ cuisine }), [cuisine]);
-  const { data: recipes = [], isLoading, isError, error, refetch } =
-    useRecipesList(params);
+  const recommendations = data?.recommendations ?? [];
+  const visible = useMemo(() => {
+    if (cuisine === "all") return recommendations;
+    return recommendations.filter((r) => r.recipe.cuisine === cuisine);
+  }, [recommendations, cuisine]);
 
   return (
     <Layout>
@@ -144,9 +186,9 @@ export default function RecipesPage() {
           </div>
         )}
 
-        {!isLoading && !isError && recipes.length === 0 && (
+        {!isLoading && !isError && visible.length === 0 && (
           <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-16 text-center">
-            <p className="text-slate-500">No recipes found.</p>
+            <p className="text-slate-500">No recommended recipes found.</p>
             {cuisine !== "all" && (
               <button
                 type="button"
@@ -159,10 +201,10 @@ export default function RecipesPage() {
           </div>
         )}
 
-        {!isLoading && !isError && recipes.length > 0 && (
+        {!isLoading && !isError && visible.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {recipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+            {visible.map((rec) => (
+              <RecommendationCard key={rec.recipe.id} rec={rec} />
             ))}
           </div>
         )}

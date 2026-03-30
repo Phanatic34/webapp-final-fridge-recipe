@@ -2,6 +2,7 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
   fetchRecipes,
   fetchRecipe,
+  fetchRecommendedRecipes,
   type RecipeListParams,
 } from "../api/recipes";
 
@@ -18,5 +19,13 @@ export function useRecipeDetail(id: number) {
     queryKey: ["recipes", id] as const,
     queryFn: () => fetchRecipe(id),
     enabled: id > 0,
+  });
+}
+
+export function useRecommendedRecipesList() {
+  return useQuery({
+    queryKey: ["recipes", "recommended"] as const,
+    queryFn: () => fetchRecommendedRecipes(),
+    placeholderData: keepPreviousData,
   });
 }
