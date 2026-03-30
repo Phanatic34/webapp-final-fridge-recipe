@@ -60,3 +60,17 @@ export type RecipeDetailResponse = RecipeResponse & {
   instructions: string | null;
   ingredients: RecipeIngredient[];
 };
+
+export type RecommendationResponse = {
+  recipe: RecipeResponse;
+  ingredients: RecipeIngredient[];
+  matched_count: number;
+  total_count: number;
+  missing_count: number;
+  match_ratio: number;
+  matched_ingredients: string[];
+  missing_ingredients: string[];
+  uses_near_expiry: boolean;
+  near_expiry_used: string[];
+  explanation: string[];
+};

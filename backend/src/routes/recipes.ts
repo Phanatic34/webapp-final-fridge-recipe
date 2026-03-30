@@ -1,15 +1,19 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { pool } from "../db/pool.js";
+import { computeExpiryMeta } from "../utils/expiry.js";
 import type {
   RecipeRow,
   RecipeIngredientRow,
   RecipeResponse,
   RecipeDetailResponse,
   RecipeIngredient,
+  RecommendationResponse,
 } from "../types/recipe.js";
 
 const router = Router();
+
+const DEFAULT_USER_ID = 1;
 
 function rowToResponse(row: RecipeRow): RecipeResponse {
   return {
@@ -35,6 +39,182 @@ function ingredientRowToResponse(row: RecipeIngredientRow): RecipeIngredient {
     unit: row.unit,
   };
 }
+
+// ─── Recommendation helpers ────────────────────────────────────
+
+type FridgeItem = {
+  name: string;
+  is_near_expiry: boolean;
+};
+
+/**
+ * Build a Set of lowercase ingredient names currently in the fridge,
+ * plus a Set of those that are near-expiry.
+ */
+async function loadFridge(userId: number) {
+  const { rows } = await pool.query<{
+    name: string;
+    expiry_date: string | Date | null;
+  }>(
+    `SELECT name, expiry_date FROM ingredients WHERE user_id = $1`,
+    [userId]
+  );
+
+  const items: FridgeItem[] = rows.map((r) => {
+    const meta = computeExpiryMeta(r.expiry_date);
+    return { name: r.name, is_near_expiry: meta.is_near_expiry };
+  });
+
+  const nameSet = new Set(items.map((i) => i.name.toLowerCase()));
+  const nearExpirySet = new Set(
+    items.filter((i) => i.is_near_expiry).map((i) => i.name.toLowerCase())
+  );
+
+  return { nameSet, nearExpirySet };
+}
+
+type RecipeWithIngredients = RecipeRow & {
+  ingredientRows: RecipeIngredientRow[];
+};
+
+async function loadAllRecipesWithIngredients(): Promise<
+  RecipeWithIngredients[]
+> {
+  const recipesResult = await pool.query<RecipeRow>(
+    `SELECT * FROM recipes ORDER BY title`
+  );
+
+  const riResult = await pool.query<RecipeIngredientRow>(
+    `SELECT * FROM recipe_ingredients ORDER BY recipe_id, id`
+  );
+
+  const riMap = new Map<number, RecipeIngredientRow[]>();
+  for (const ri of riResult.rows) {
+    let arr = riMap.get(ri.recipe_id);
+    if (!arr) {
+      arr = [];
+      riMap.set(ri.recipe_id, arr);
+    }
+    arr.push(ri);
+  }
+
+  return recipesResult.rows.map((r) => ({
+    ...r,
+    ingredientRows: riMap.get(r.id) ?? [],
+  }));
+}
+
+/**
+ * Score one recipe against the fridge.
+ *
+ * Ranking formula (higher = better):
+ *   score = match_ratio                        (0.0 – 1.0)
+ *         + 0.15  if any matched ingredient is near-expiry
+ *         - 0.05 * missing_count               (penalty per missing item)
+ *
+ * match_ratio alone is the primary factor (what % of ingredients you have).
+ * The near-expiry bonus nudges recipes that help use up expiring food.
+ * The missing-count penalty breaks ties between equal-ratio recipes.
+ */
+function scoreRecipe(
+  recipe: RecipeWithIngredients,
+  fridgeNames: Set<string>,
+  nearExpiryNames: Set<string>
+): RecommendationResponse {
+  const matched: string[] = [];
+  const missing: string[] = [];
+  const nearExpiryUsed: string[] = [];
+
+  for (const ri of recipe.ingredientRows) {
+    const lower = ri.name.toLowerCase();
+    if (fridgeNames.has(lower)) {
+      matched.push(ri.name);
+      if (nearExpiryNames.has(lower)) {
+        nearExpiryUsed.push(ri.name);
+      }
+    } else {
+      missing.push(ri.name);
+    }
+  }
+
+  const total = recipe.ingredientRows.length;
+  const matchRatio = total > 0 ? matched.length / total : 0;
+  const usesNearExpiry = nearExpiryUsed.length > 0;
+
+  const explanation: string[] = [];
+
+  if (total === 0) {
+    explanation.push("This recipe has no ingredient list.");
+  } else if (matched.length === total) {
+    explanation.push("You have all the ingredients!");
+  } else {
+    explanation.push(
+      `You have ${matched.length} of ${total} required ingredients.`
+    );
+  }
+
+  if (usesNearExpiry) {
+    explanation.push(
+      `Helps use near-expiry: ${nearExpiryUsed.join(", ")}.`
+    );
+  }
+
+  if (missing.length > 0 && missing.length <= 3) {
+    explanation.push(`Only missing: ${missing.join(", ")}.`);
+  } else if (missing.length > 3) {
+    explanation.push(`Missing ${missing.length} ingredients.`);
+  }
+
+  return {
+    recipe: rowToResponse(recipe),
+    ingredients: recipe.ingredientRows.map(ingredientRowToResponse),
+    matched_count: matched.length,
+    total_count: total,
+    missing_count: missing.length,
+    match_ratio: Math.round(matchRatio * 1000) / 1000,
+    matched_ingredients: matched,
+    missing_ingredients: missing,
+    uses_near_expiry: usesNearExpiry,
+    near_expiry_used: nearExpiryUsed,
+    explanation,
+  };
+}
+
+function sortScore(r: RecommendationResponse): number {
+  return (
+    r.match_ratio +
+    (r.uses_near_expiry ? 0.15 : 0) -
+    0.05 * r.missing_count
+  );
+}
+
+// ─── Routes ────────────────────────────────────────────────────
+
+/**
+ * GET /api/recipes/recommended
+ *
+ * Returns recipes ranked by how well they match the user's current fridge.
+ * Only includes recipes with at least one matched ingredient (match_ratio > 0).
+ */
+router.get("/recommended", async (_req: Request, res: Response) => {
+  try {
+    const [fridge, recipes] = await Promise.all([
+      loadFridge(DEFAULT_USER_ID),
+      loadAllRecipesWithIngredients(),
+    ]);
+
+    const scored = recipes
+      .map((r) => scoreRecipe(r, fridge.nameSet, fridge.nearExpirySet))
+      .filter((r) => r.matched_count > 0);
+
+    scored.sort((a, b) => sortScore(b) - sortScore(a));
+
+    res.json({ recommendations: scored });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to compute recommendations" });
+  }
+});
 
 /** GET /api/recipes?cuisine= */
 router.get("/", async (req: Request, res: Response) => {
