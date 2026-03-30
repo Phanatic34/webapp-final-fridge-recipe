@@ -13,6 +13,7 @@ type Props = {
 const navItems = [
   { to: "/", label: "My Fridge" },
   { to: "/recipes", label: "Recipes" },
+  { to: "/favorites", label: "Favorites" },
 ] as const;
 
 export function Layout({
