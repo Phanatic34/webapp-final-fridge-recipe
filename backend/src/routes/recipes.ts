@@ -168,14 +168,15 @@ function scoreRecipe(
   return {
     recipe: rowToResponse(recipe),
     ingredients: recipe.ingredientRows.map(ingredientRowToResponse),
-    matched_count: matched.length,
-    total_count: total,
+    match_count: matched.length,
+    total_ingredients: total,
     missing_count: missing.length,
     match_ratio: Math.round(matchRatio * 1000) / 1000,
     matched_ingredients: matched,
     missing_ingredients: missing,
     uses_near_expiry: usesNearExpiry,
-    near_expiry_used: nearExpiryUsed,
+    near_expiry_ingredient_count: nearExpiryUsed.length,
+    near_expiry_ingredients: nearExpiryUsed,
     explanation,
   };
 }
@@ -205,7 +206,7 @@ router.get("/recommended", async (_req: Request, res: Response) => {
 
     const scored = recipes
       .map((r) => scoreRecipe(r, fridge.nameSet, fridge.nearExpirySet))
-      .filter((r) => r.matched_count > 0);
+      .filter((r) => r.match_count > 0);
 
     scored.sort((a, b) => sortScore(b) - sortScore(a));
 

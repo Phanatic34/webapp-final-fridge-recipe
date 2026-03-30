@@ -64,13 +64,15 @@ export type RecipeDetailResponse = RecipeResponse & {
 export type RecommendationResponse = {
   recipe: RecipeResponse;
   ingredients: RecipeIngredient[];
-  matched_count: number;
-  total_count: number;
+  // Counts (match + missing are used for ranking/explanations)
+  match_count: number;
+  total_ingredients: number;
   missing_count: number;
   match_ratio: number;
   matched_ingredients: string[];
   missing_ingredients: string[];
   uses_near_expiry: boolean;
-  near_expiry_used: string[];
+  near_expiry_ingredient_count: number;
+  near_expiry_ingredients: string[];
   explanation: string[];
 };

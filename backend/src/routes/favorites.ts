@@ -1,0 +1,106 @@
+import { Router } from "express";
+import type { Request, Response } from "express";
+import { pool } from "../db/pool.js";
+import type { RecipeRow, RecipeResponse } from "../types/recipe.js";
+
+const router = Router();
+
+const DEFAULT_USER_ID = 1;
+
+function rowToResponse(row: RecipeRow): RecipeResponse {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    image_url: row.image_url,
+    cuisine: row.cuisine,
+    cooking_time: row.cooking_time,
+    servings: row.servings,
+    difficulty: row.difficulty,
+    created_at: row.created_at.toISOString(),
+    updated_at: row.updated_at.toISOString(),
+  };
+}
+
+/** GET /api/favorites */
+router.get("/", async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query<RecipeRow>(
+      `SELECT r.*
+       FROM favorites f
+       JOIN recipes r ON r.id = f.recipe_id
+       WHERE f.user_id = $1
+       ORDER BY f.created_at DESC`,
+      [DEFAULT_USER_ID]
+    );
+
+    res.json({ recipes: result.rows.map(rowToResponse) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to fetch favorites" });
+  }
+});
+
+/** POST /api/favorites/:recipeId */
+router.post("/:recipeId", async (req: Request, res: Response) => {
+  const recipeId = Number.parseInt(req.params.recipeId, 10);
+  if (Number.isNaN(recipeId)) {
+    res.status(400).json({ error: "Invalid recipeId" });
+    return;
+  }
+
+  try {
+    const recipeResult = await pool.query<RecipeRow>(
+      `SELECT * FROM recipes WHERE id = $1`,
+      [recipeId]
+    );
+
+    if (recipeResult.rows.length === 0) {
+      res.status(404).json({ error: "Recipe not found" });
+      return;
+    }
+
+    await pool.query(
+      `INSERT INTO favorites (user_id, recipe_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, recipe_id) DO NOTHING`,
+      [DEFAULT_USER_ID, recipeId]
+    );
+
+    res.status(201).json({ recipe: rowToResponse(recipeResult.rows[0]) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to add favorite" });
+  }
+});
+
+/** DELETE /api/favorites/:recipeId */
+router.delete("/:recipeId", async (req: Request, res: Response) => {
+  const recipeId = Number.parseInt(req.params.recipeId, 10);
+  if (Number.isNaN(recipeId)) {
+    res.status(400).json({ error: "Invalid recipeId" });
+    return;
+  }
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM favorites
+       WHERE user_id = $1 AND recipe_id = $2
+       RETURNING recipe_id`,
+      [DEFAULT_USER_ID, recipeId]
+    );
+
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: "Favorite not found" });
+      return;
+    }
+
+    res.json({ message: "Removed" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to remove favorite" });
+  }
+});
+
+export default router;
+

@@ -299,6 +299,9 @@ async function seed() {
     }
   }
 
+  // Keep seed deterministic for demos/tests
+  await pool.query(`DELETE FROM favorites WHERE user_id = 1`);
+
   console.log(
     `Seed complete: 8 ingredients, ${recipes.length} recipes inserted.`
   );
