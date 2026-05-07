@@ -56,7 +56,8 @@ CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
 CREATE TABLE IF NOT EXISTS recipe_equipment (
   id           SERIAL PRIMARY KEY,
   recipe_id    INTEGER NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
-  equipment_name TEXT NOT NULL
+  equipment_name TEXT NOT NULL,
+  UNIQUE(recipe_id, equipment_name)
 );
 
 CREATE INDEX IF NOT EXISTS idx_recipe_equipment_recipe ON recipe_equipment(recipe_id);
@@ -69,6 +70,8 @@ CREATE TABLE IF NOT EXISTS user_equipment (
   UNIQUE(user_id, equipment_name)
 );
 
+CREATE INDEX IF NOT EXISTS idx_user_equipment_user_id ON user_equipment(user_id);
+
 -- Ingredients/allergens the user excludes from recommendations
 CREATE TABLE IF NOT EXISTS user_exclusions (
   id      SERIAL PRIMARY KEY,
@@ -77,6 +80,8 @@ CREATE TABLE IF NOT EXISTS user_exclusions (
   type    TEXT NOT NULL CHECK (type IN ('allergen', 'custom')),
   UNIQUE(user_id, name)
 );
+
+CREATE INDEX IF NOT EXISTS idx_user_exclusions_user_id ON user_exclusions(user_id);
 
 -- Shopping list
 CREATE TABLE IF NOT EXISTS shopping_list (
