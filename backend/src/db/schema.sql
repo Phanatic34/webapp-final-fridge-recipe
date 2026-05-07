@@ -51,3 +51,42 @@ CREATE TABLE IF NOT EXISTS favorites (
 );
 
 CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+
+-- Equipment required per recipe
+CREATE TABLE IF NOT EXISTS recipe_equipment (
+  id           SERIAL PRIMARY KEY,
+  recipe_id    INTEGER NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+  equipment_name TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_recipe_equipment_recipe ON recipe_equipment(recipe_id);
+
+-- Equipment the user owns
+CREATE TABLE IF NOT EXISTS user_equipment (
+  id             SERIAL PRIMARY KEY,
+  user_id        INTEGER NOT NULL DEFAULT 1,
+  equipment_name TEXT NOT NULL,
+  UNIQUE(user_id, equipment_name)
+);
+
+-- Ingredients/allergens the user excludes from recommendations
+CREATE TABLE IF NOT EXISTS user_exclusions (
+  id      SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL DEFAULT 1,
+  name    TEXT NOT NULL,
+  type    TEXT NOT NULL CHECK (type IN ('allergen', 'custom')),
+  UNIQUE(user_id, name)
+);
+
+-- Shopping list
+CREATE TABLE IF NOT EXISTS shopping_list (
+  id               SERIAL PRIMARY KEY,
+  user_id          INTEGER NOT NULL DEFAULT 1,
+  ingredient_name  TEXT NOT NULL,
+  quantity         DECIMAL(10, 2),
+  unit             TEXT,
+  is_checked       BOOLEAN NOT NULL DEFAULT FALSE,
+  source_recipe_id INTEGER REFERENCES recipes(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, ingredient_name)
+);
