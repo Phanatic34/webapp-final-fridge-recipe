@@ -1,15 +1,15 @@
 ````md
-# Fridge Recipe Recommender — MVP
+# 冰箱食譜推薦 — MVP
 
-A full-stack web application for managing fridge ingredients and finding useful recipes based on what is currently available.
+A full-stack web application for managing fridge ingredients and finding useful recipes based on what is currently available. The UI is in Traditional Chinese (繁體中文).
 
 Current MVP features:
 
-- **Inventory management**: add, edit, delete, and view ingredients
+- **Inventory management**: add, edit, delete, and view ingredients with real-time name search
 - **Expiry tracking**: highlight expired and near-expiry items
 - **Recipe system**: browse recipes and view recipe details
 - **Recommendation engine**: rank recipes using rule-based matching and explainable scoring
-- **Favorites**: save and remove favorite recipes
+- **Favorites**: save and one-click remove favorite recipes directly from the favorites list
 
 Built with:
 
@@ -23,11 +23,11 @@ Built with:
 
 This project helps users:
 
-1. manage the ingredients in their fridge,
+1. manage the ingredients in their fridge (with search),
 2. identify items that are close to expiring,
 3. discover recipes that best match current ingredients,
 4. understand *why* certain recipes are recommended,
-5. save favorite recipes for later.
+5. save and quickly remove favorite recipes.
 
 > 中文註解：  
 > 系統核心不只是「列出食譜」，而是根據冰箱現有食材做推薦，並提供可解釋的推薦依據。
@@ -116,7 +116,7 @@ Example `backend/.env`:
 
 ```env
 PORT=3001
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fridge_recipe
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/fridge_recipe
 ```
 
 > 中文註解：
@@ -297,6 +297,33 @@ npm run db:seed
 
 ---
 
+## Troubleshooting
+
+**`error: database "fridge_recipe" does not exist`**
+
+The Docker volume has stale data from a previous run. Reset it:
+
+```bash
+docker compose down -v
+docker compose up -d
+cd backend
+npm run db:seed
+```
+
+**`Error: listen EADDRINUSE :::3001`**
+
+Another process is already using port 3001. Kill it:
+
+```bash
+lsof -ti:3001 | xargs kill
+```
+
+**Why port 5433 instead of 5432?**
+
+The Docker container is mapped to port 5433 to avoid conflicts with any native PostgreSQL installation that may already be running on port 5432 on your machine.
+
+---
+
 ## Notes for teammates
 
 * This repository includes the **database setup code**, not a shared live database.
@@ -310,9 +337,11 @@ npm run db:seed
 
 * user authentication and multi-user support
 * cloud database migration
-* better ingredient normalization
+* better ingredient normalization (fuzzy name matching)
 * improved recommendation ranking
 * shopping list / missing ingredient support
+* user-created and editable recipes
+* reduce ingredient quantity after cooking a recipe
 
 ```
 ```

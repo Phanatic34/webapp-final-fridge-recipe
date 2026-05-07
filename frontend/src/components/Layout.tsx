@@ -11,9 +11,9 @@ type Props = {
 };
 
 const navItems = [
-  { to: "/", label: "My Fridge" },
-  { to: "/recipes", label: "Recipes" },
-  { to: "/favorites", label: "Favorites" },
+  { to: "/", label: "我的冰箱" },
+  { to: "/recipes", label: "食譜" },
+  { to: "/favorites", label: "收藏" },
 ] as const;
 
 export function Layout({
@@ -30,18 +30,18 @@ export function Layout({
     expiredCount !== undefined;
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white shadow-sm">
+    <div className="min-h-screen bg-[#FAFAF7]">
+      <header className="bg-[#1B2E22] shadow-md">
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              Fridge Recipe Recommender
+            <h1 className="font-['Noto_Serif_TC'] text-xl font-bold tracking-tight text-white">
+              冰箱食譜推薦
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {showStats && (
-              <span className="text-sm text-slate-600">
-                <strong className="text-slate-900">{totalCount}</strong> items
+              <span className="text-sm text-white/80">
+                <strong className="text-white">{totalCount}</strong> 件食材
               </span>
             )}
             {headerRight}
@@ -49,9 +49,9 @@ export function Layout({
               <button
                 type="button"
                 onClick={onAddClick}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                className="rounded-lg bg-[#C4622D] px-4 py-2 text-sm font-medium text-white shadow hover:bg-[#b3561f] focus:outline-none focus:ring-2 focus:ring-[#C4622D] focus:ring-offset-2 focus:ring-offset-[#1B2E22]"
               >
-                Add ingredient
+                新增食材
               </button>
             )}
           </div>
@@ -67,8 +67,8 @@ export function Layout({
                   className={({ isActive }) =>
                     `inline-block rounded-t-lg border-b-2 px-4 py-2 text-sm font-medium transition ${
                       isActive
-                        ? "border-emerald-600 text-emerald-700"
-                        : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                        ? "border-[#C4622D] text-[#C4622D]"
+                        : "border-transparent text-white/70 hover:border-white/30 hover:text-white"
                     }`
                   }
                 >
@@ -81,27 +81,27 @@ export function Layout({
       </header>
 
       {showStats && (
-        <section className="border-b border-slate-100 bg-slate-50/80">
-          <div className="mx-auto grid max-w-5xl gap-3 px-4 py-4 sm:grid-cols-3">
-            <div className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-slate-100">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Total
+        <section className="border-b border-[#E5E7EB] bg-[#FAFAF7]">
+          <div className="mx-auto grid max-w-5xl gap-4 px-4 py-4 sm:grid-cols-3">
+            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-[#E5E7EB]">
+              <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">
+                總計
               </p>
-              <p className="text-2xl font-semibold text-slate-900">
+              <p className="text-2xl font-semibold text-[#1B2E22]">
                 {totalCount}
               </p>
             </div>
-            <div className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-amber-100">
+            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-amber-100">
               <p className="text-xs font-medium uppercase tracking-wide text-amber-800">
-                Near expiry
+                即將到期
               </p>
               <p className="text-2xl font-semibold text-amber-900">
                 {nearExpiryCount}
               </p>
             </div>
-            <div className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-red-100">
+            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-red-100">
               <p className="text-xs font-medium uppercase tracking-wide text-red-800">
-                Expired
+                已過期
               </p>
               <p className="text-2xl font-semibold text-red-900">
                 {expiredCount}
@@ -113,8 +113,8 @@ export function Layout({
 
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
 
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
-        Fridge Recipe Recommender
+      <footer className="border-t border-[#E5E7EB] bg-[#FAFAF7] py-6 text-center text-xs text-[#6B7280]">
+        冰箱食譜推薦
       </footer>
     </div>
   );

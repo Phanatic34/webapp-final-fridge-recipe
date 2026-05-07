@@ -12,7 +12,7 @@ export function DeleteConfirmModal({
   open,
   title,
   message,
-  confirmLabel = "Delete",
+  confirmLabel = "刪除",
   loading,
   onConfirm,
   onCancel,
@@ -30,20 +30,20 @@ export function DeleteConfirmModal({
         type="button"
         className="absolute inset-0 bg-black/40"
         onClick={onCancel}
-        aria-label="Close"
+        aria-label="關閉"
       />
       <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 id="delete-modal-title" className="text-lg font-semibold text-slate-900">
+        <h2 id="delete-modal-title" className="text-lg font-semibold text-[#1B2E22]">
           {title}
         </h2>
-        <p className="mt-2 text-sm text-slate-600">{message}</p>
+        <p className="mt-2 text-sm text-[#6B7280]">{message}</p>
         <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-[#E5E7EB] px-4 py-2 text-sm font-medium text-[#1B2E22] hover:bg-slate-50"
           >
-            Cancel
+            取消
           </button>
           <button
             type="button"
@@ -51,7 +51,7 @@ export function DeleteConfirmModal({
             disabled={loading}
             className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
           >
-            {loading ? "Deleting…" : confirmLabel}
+            {loading ? "刪除中…" : confirmLabel}
           </button>
         </div>
       </div>

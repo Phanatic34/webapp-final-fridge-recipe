@@ -1,58 +1,78 @@
+import { toast } from "sonner";
 import { Layout } from "../components/Layout";
-import { useFavoritesList } from "../hooks/useFavorites";
+import { useFavoritesList, useRemoveFavorite } from "../hooks/useFavorites";
 import type { Recipe } from "../types/recipe";
 import { Link } from "react-router-dom";
+import { CUISINE_LABELS } from "../utils/labels";
 
-function RecipeCard({ recipe }: { recipe: Recipe }) {
+type CardProps = {
+  recipe: Recipe;
+  onRemove: (id: number) => void;
+  isRemoving: boolean;
+};
+
+function RecipeCard({ recipe, onRemove, isRemoving }: CardProps) {
   return (
-    <Link
-      to={`/recipes/${recipe.id}`}
-      className="group flex flex-col rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-emerald-300"
-    >
-      <div className="flex flex-col gap-2">
+    <div className="group relative flex flex-col rounded-2xl bg-white shadow-sm ring-1 ring-[#E5E7EB] transition hover:-translate-y-0.5 hover:shadow-md">
+      <Link to={`/recipes/${recipe.id}`} className="flex flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-semibold leading-tight text-slate-900 group-hover:text-emerald-700">
+          <h3 className="text-lg font-semibold leading-tight text-[#1B2E22] group-hover:text-[#C4622D]">
             {recipe.title}
           </h3>
           {recipe.cuisine && (
-            <span className="shrink-0 rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium capitalize text-indigo-800">
-              {recipe.cuisine}
+            <span className="shrink-0 rounded bg-[#1B2E22]/10 px-2 py-0.5 text-xs font-medium text-[#1B2E22]">
+              {CUISINE_LABELS[recipe.cuisine] ?? recipe.cuisine}
             </span>
           )}
         </div>
         {recipe.description && (
-          <p className="line-clamp-2 text-sm text-slate-600">
+          <p className="line-clamp-2 text-sm text-[#6B7280]">
             {recipe.description}
           </p>
         )}
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           {recipe.cooking_time !== null && (
-            <span className="text-xs text-slate-500">
-              {recipe.cooking_time} min
+            <span className="text-xs text-[#6B7280]">
+              {recipe.cooking_time} 分鐘
             </span>
           )}
           {recipe.servings !== null && (
-            <span className="text-xs text-slate-500">
-              {recipe.servings} servings
+            <span className="text-xs text-[#6B7280]">
+              {recipe.servings} 人份
             </span>
           )}
         </div>
+      </Link>
+      <div className="border-t border-[#E5E7EB] px-4 py-2">
+        <button
+          type="button"
+          disabled={isRemoving}
+          onClick={() => onRemove(recipe.id)}
+          className="w-full rounded-lg border border-red-200 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+        >
+          {isRemoving ? "移除中…" : "移除收藏"}
+        </button>
       </div>
-    </Link>
+    </div>
   );
 }
 
 export default function FavoritesPage() {
   const { data, isLoading, isError, error, refetch } = useFavoritesList();
   const recipes = data ?? [];
+  const removeFav = useRemoveFavorite();
+
+  function handleRemove(id: number) {
+    void removeFav.mutateAsync(id).then(() => toast.success("已移除收藏"));
+  }
 
   return (
     <Layout>
       <div className="space-y-6">
         <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold text-slate-900">Favorites</h2>
-          <p className="text-sm text-slate-500">
-            Save recipes you want to cook.
+          <h2 className="font-['Noto_Serif_TC'] text-lg font-semibold text-[#1B2E22]">我的收藏</h2>
+          <p className="text-sm text-[#6B7280]">
+            儲存想煮的食譜。
           </p>
         </div>
 
@@ -64,14 +84,14 @@ export default function FavoritesPage() {
             <p className="text-sm text-red-800">
               {error instanceof Error
                 ? error.message
-                : "Could not load favorites. Is the API running?"}
+                : "無法載入收藏，API 是否正在運行？"}
             </p>
             <button
               type="button"
               onClick={() => void refetch()}
               className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800"
             >
-              Retry
+              重試
             </button>
           </div>
         )}
@@ -81,17 +101,17 @@ export default function FavoritesPage() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="h-32 animate-pulse rounded-xl bg-slate-200"
+                className="h-32 animate-pulse rounded-2xl bg-slate-200"
               />
             ))}
           </div>
         )}
 
         {!isLoading && !isError && recipes.length === 0 && (
-          <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-16 text-center">
-            <p className="text-slate-500">No favorites yet.</p>
+          <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#E5E7EB] py-16 text-center">
+            <p className="text-[#6B7280]">目前沒有收藏的食譜。</p>
             <p className="text-sm text-slate-400">
-              Open any recipe and tap “Save”.
+              前往食譜頁面，將喜歡的食譜加入收藏。
             </p>
           </div>
         )}
@@ -99,7 +119,12 @@ export default function FavoritesPage() {
         {!isLoading && !isError && recipes.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                onRemove={handleRemove}
+                isRemoving={removeFav.isPending && removeFav.variables === recipe.id}
+              />
             ))}
           </div>
         )}
@@ -107,4 +132,3 @@ export default function FavoritesPage() {
     </Layout>
   );
 }
-

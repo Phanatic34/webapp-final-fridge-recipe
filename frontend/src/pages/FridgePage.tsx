@@ -15,10 +15,12 @@ import {
 } from "../hooks/useIngredients";
 import type { Ingredient, IngredientFormValues, SortOption } from "../types/ingredient";
 import { CATEGORIES } from "../types/ingredient";
+import { CATEGORY_LABELS } from "../utils/labels";
 
 export default function FridgePage() {
   const [sort, setSort] = useState<SortOption>("created_at");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
 
   const listParams = useMemo(
     () => ({ sort, category: categoryFilter }),
@@ -51,6 +53,12 @@ export default function FridgePage() {
       expired,
     };
   }, [ingredients]);
+
+  const filteredIngredients = useMemo(() => {
+    if (!search.trim()) return ingredients;
+    const q = search.toLowerCase();
+    return ingredients.filter((ing) => ing.name.toLowerCase().includes(q));
+  }, [ingredients, search]);
 
   function openCreate() {
     setFormMode("create");
@@ -89,17 +97,17 @@ export default function FridgePage() {
     try {
       if (formMode === "create") {
         await createMut.mutateAsync(payload);
-        toast.success("Ingredient added");
+        toast.success("食材已新增");
       } else if (editing) {
         await updateMut.mutateAsync({ id: editing.id, payload });
-        toast.success("Ingredient updated");
+        toast.success("食材已更新");
       }
       closeForm();
     } catch (e) {
       const msg =
         e && typeof e === "object" && "message" in e
           ? String((e as Error).message)
-          : "Something went wrong";
+          : "發生錯誤";
       toast.error(msg);
     }
   }
@@ -108,13 +116,13 @@ export default function FridgePage() {
     if (!deleteTarget) return;
     try {
       await deleteMut.mutateAsync(deleteTarget.id);
-      toast.success("Ingredient removed");
+      toast.success("食材已刪除");
       setDeleteTarget(null);
     } catch (e) {
       const msg =
         e && typeof e === "object" && "message" in e
           ? String((e as Error).message)
-          : "Could not delete";
+          : "刪除失敗";
       toast.error(msg);
     }
   }
@@ -134,41 +142,73 @@ export default function FridgePage() {
             <div className="flex flex-col gap-1">
               <label
                 htmlFor="sort"
-                className="text-xs font-medium uppercase text-slate-500"
+                className="text-xs font-medium uppercase text-[#6B7280]"
               >
-                Sort by
+                排序
               </label>
               <select
                 id="sort"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
               >
-                <option value="created_at">Date added</option>
-                <option value="name">Name</option>
-                <option value="expiry_date">Expiry date</option>
+                <option value="created_at">新增日期</option>
+                <option value="name">名稱</option>
+                <option value="expiry_date">到期日</option>
               </select>
             </div>
             <div className="flex flex-col gap-1">
               <label
                 htmlFor="category"
-                className="text-xs font-medium uppercase text-slate-500"
+                className="text-xs font-medium uppercase text-[#6B7280]"
               >
-                Category
+                分類
               </label>
               <select
                 id="category"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
               >
-                <option value="all">All categories</option>
+                <option value="all">所有分類</option>
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {CATEGORY_LABELS[c] ?? c}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="flex flex-col gap-1 sm:flex-1">
+              <label
+                htmlFor="search"
+                className="text-xs font-medium uppercase text-[#6B7280]"
+              >
+                搜尋食材
+              </label>
+              <div className="relative">
+                <svg
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-4.35-4.35m0 0A7 7 0 1 0 6.65 6.65a7 7 0 0 0 9.97 9.97z"
+                  />
+                </svg>
+                <input
+                  id="search"
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="搜尋食材..."
+                  className="w-full rounded-lg border border-[#E5E7EB] bg-white pl-9 pr-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+                />
+              </div>
             </div>
           </div>
 
@@ -180,14 +220,14 @@ export default function FridgePage() {
               <p className="text-sm text-red-800">
                 {error instanceof Error
                   ? error.message
-                  : "Could not load ingredients. Is the API running?"}
+                  : "無法載入食材，API 是否正在運行？"}
               </p>
               <button
                 type="button"
                 onClick={() => void refetch()}
                 className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800"
               >
-                Retry
+                重試
               </button>
             </div>
           )}
@@ -198,9 +238,22 @@ export default function FridgePage() {
             <EmptyState onAdd={openCreate} />
           )}
 
-          {!isLoading && !isError && ingredients.length > 0 && (
+          {!isLoading && !isError && ingredients.length > 0 && filteredIngredients.length === 0 && (
+            <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#E5E7EB] py-12 text-center">
+              <p className="text-[#6B7280]">找不到符合「{search}」的食材。</p>
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="text-sm font-medium text-[#C4622D] hover:underline"
+              >
+                清除搜尋
+              </button>
+            </div>
+          )}
+
+          {!isLoading && !isError && filteredIngredients.length > 0 && (
             <IngredientList
-              ingredients={ingredients}
+              ingredients={filteredIngredients}
               onEdit={openEdit}
               onDelete={(ing) => setDeleteTarget(ing)}
             />
@@ -211,7 +264,7 @@ export default function FridgePage() {
       <FormModal
         open={formOpen}
         onClose={closeForm}
-        title={formMode === "create" ? "Add ingredient" : "Edit ingredient"}
+        title={formMode === "create" ? "新增食材" : "編輯食材"}
       >
         <IngredientForm
           mode={formMode}
@@ -224,10 +277,10 @@ export default function FridgePage() {
 
       <DeleteConfirmModal
         open={!!deleteTarget}
-        title="Remove ingredient?"
+        title="移除食材？"
         message={
           deleteTarget
-            ? `Remove "${deleteTarget.name}" from your inventory? This cannot be undone.`
+            ? `確定要移除「${deleteTarget.name}」嗎？此操作無法復原。`
             : ""
         }
         loading={deleteMut.isPending}
