@@ -117,7 +117,7 @@ async function loadUserEquipment(userId: number): Promise<Set<string>> {
     "SELECT equipment_name FROM user_equipment WHERE user_id = $1",
     [userId]
   );
-  return new Set(rows.map((r) => r.equipment_name));
+  return new Set(rows.map((r) => r.equipment_name.toLowerCase()));
 }
 
 async function loadRecipeEquipmentMap(): Promise<Map<number, string[]>> {
@@ -127,7 +127,7 @@ async function loadRecipeEquipmentMap(): Promise<Map<number, string[]>> {
   const map = new Map<number, string[]>();
   for (const row of rows) {
     const arr = map.get(row.recipe_id) ?? [];
-    arr.push(row.equipment_name);
+    arr.push(row.equipment_name.toLowerCase());
     map.set(row.recipe_id, arr);
   }
   return map;
@@ -219,9 +219,14 @@ function scoreRecipe(
  * Only includes recipes with at least one matched ingredient (match_ratio > 0).
  */
 router.get("/recommended", async (req: Request, res: Response) => {
-  const maxTime = req.query.max_time
-    ? Number.parseInt(req.query.max_time as string, 10)
-    : null;
+  let maxTime: number | null = null;
+  if (req.query.max_time != null) {
+    maxTime = Number.parseInt(req.query.max_time as string, 10);
+    if (Number.isNaN(maxTime) || maxTime <= 0) {
+      res.status(400).json({ error: "max_time must be a positive integer" });
+      return;
+    }
+  }
 
   try {
     const [fridge, recipes, exclusions, userEquipment, recipeEquipmentMap] =
@@ -251,7 +256,7 @@ router.get("/recommended", async (req: Request, res: Response) => {
         }
 
         // 3. Max cooking time filter
-        if (maxTime !== null && !Number.isNaN(maxTime)) {
+        if (maxTime !== null) {
           if ((recipe.cooking_time ?? 0) > maxTime) return false;
         }
 
