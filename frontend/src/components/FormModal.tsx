@@ -21,18 +21,18 @@ export function FormModal({ open, title, children, onClose }: Props) {
         type="button"
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
-        aria-label="Close"
+        aria-label="關閉"
       />
       <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-start justify-between gap-2">
-          <h2 id="form-modal-title" className="text-lg font-semibold text-slate-900">
+          <h2 id="form-modal-title" className="text-lg font-semibold text-[#1B2E22]">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
             className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-            aria-label="Close"
+            aria-label="關閉"
           >
             ✕
           </button>

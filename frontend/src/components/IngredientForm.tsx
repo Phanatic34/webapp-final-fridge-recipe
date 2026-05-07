@@ -9,6 +9,7 @@ import {
   STATUSES,
   type Ingredient,
 } from "../types/ingredient";
+import { CATEGORY_LABELS, STATUS_LABELS } from "../utils/labels";
 
 type Props = {
   mode: "create" | "edit";
@@ -65,14 +66,14 @@ export function IngredientForm({
       noValidate
     >
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-slate-700">
-          Name
+        <label htmlFor="name" className="block text-sm font-medium text-[#1B2E22]">
+          名稱
         </label>
         <input
           id="name"
           type="text"
           autoComplete="off"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
           {...form.register("name")}
         />
         {form.formState.errors.name && (
@@ -86,16 +87,16 @@ export function IngredientForm({
         <div>
           <label
             htmlFor="quantity"
-            className="block text-sm font-medium text-slate-700"
+            className="block text-sm font-medium text-[#1B2E22]"
           >
-            Quantity
+            數量
           </label>
           <input
             id="quantity"
             type="number"
             step="any"
             min="0"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
             {...form.register("quantity", { valueAsNumber: true })}
           />
           {form.formState.errors.quantity && (
@@ -105,12 +106,12 @@ export function IngredientForm({
           )}
         </div>
         <div>
-          <label htmlFor="unit" className="block text-sm font-medium text-slate-700">
-            Unit
+          <label htmlFor="unit" className="block text-sm font-medium text-[#1B2E22]">
+            單位
           </label>
           <select
             id="unit"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
             {...form.register("unit")}
           >
             {UNITS.map((u) => (
@@ -126,19 +127,19 @@ export function IngredientForm({
         <div>
           <label
             htmlFor="category"
-            className="block text-sm font-medium text-slate-700"
+            className="block text-sm font-medium text-[#1B2E22]"
           >
-            Category
+            分類
           </label>
           <select
             id="category"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
             {...form.register("category")}
           >
             <option value="">—</option>
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {CATEGORY_LABELS[c] ?? c}
               </option>
             ))}
           </select>
@@ -146,18 +147,18 @@ export function IngredientForm({
         <div>
           <label
             htmlFor="status"
-            className="block text-sm font-medium text-slate-700"
+            className="block text-sm font-medium text-[#1B2E22]"
           >
-            Status
+            狀態
           </label>
           <select
             id="status"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
             {...form.register("status")}
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {STATUS_LABELS[s] ?? s}
               </option>
             ))}
           </select>
@@ -167,18 +168,18 @@ export function IngredientForm({
       <div>
         <label
           htmlFor="expiry_date"
-          className="block text-sm font-medium text-slate-700"
+          className="block text-sm font-medium text-[#1B2E22]"
         >
-          Expiry date (optional)
+          到期日（選填）
         </label>
         <input
           id="expiry_date"
           type="date"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
           {...form.register("expiry_date")}
         />
-        <p className="mt-1 text-xs text-slate-500">
-          Items expiring within {3} days are highlighted as near expiry.
+        <p className="mt-1 text-xs text-[#6B7280]">
+          3 天內到期的食材會標示為即將到期。
         </p>
       </div>
 
@@ -186,20 +187,20 @@ export function IngredientForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-lg border border-[#E5E7EB] px-4 py-2 text-sm font-medium text-[#1B2E22] hover:bg-slate-50"
         >
-          Cancel
+          取消
         </button>
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="rounded-lg bg-[#C4622D] px-4 py-2 text-sm font-medium text-white hover:bg-[#b3561f] disabled:opacity-50"
         >
           {submitting
-            ? "Saving…"
+            ? "儲存中…"
             : mode === "create"
-              ? "Add ingredient"
-              : "Save changes"}
+              ? "新增食材"
+              : "儲存變更"}
         </button>
       </div>
     </form>
