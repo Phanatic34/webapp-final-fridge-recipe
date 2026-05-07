@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import ingredientsRouter from "./routes/ingredients.js";
 import favoritesRouter from "./routes/favorites.js";
 import recipesRouter from "./routes/recipes.js";
+import settingsRouter from "./routes/settings.js";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/ingredients", ingredientsRouter);
 app.use("/api/recipes", recipesRouter);
 app.use("/api/favorites", favoritesRouter);
+app.use("/api/settings", settingsRouter);
 
 app.use(
   (
