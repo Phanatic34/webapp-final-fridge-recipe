@@ -17,6 +17,7 @@ type RecipeSeed = {
   difficulty: string;
   instructions: string;
   ingredients: { name: string; quantity: number; unit: string }[];
+  equipment: string[];
 };
 
 const recipes: RecipeSeed[] = [
@@ -37,6 +38,7 @@ const recipes: RecipeSeed[] = [
       { name: "Sugar", quantity: 1, unit: "tsp" },
       { name: "Cooking Oil", quantity: 2, unit: "tbsp" },
     ],
+    equipment: ["炒鍋"],
   },
   {
     title: "Spinach Omelette",
@@ -53,6 +55,7 @@ const recipes: RecipeSeed[] = [
       { name: "Salt", quantity: 0.25, unit: "tsp" },
       { name: "Butter", quantity: 1, unit: "tbsp" },
     ],
+    equipment: ["平底鍋"],
   },
   {
     title: "Fried Rice",
@@ -71,6 +74,7 @@ const recipes: RecipeSeed[] = [
       { name: "Scallions", quantity: 2, unit: "pieces" },
       { name: "Salt", quantity: 0.25, unit: "tsp" },
     ],
+    equipment: ["炒鍋"],
   },
   {
     title: "Pasta Aglio e Olio",
@@ -90,6 +94,7 @@ const recipes: RecipeSeed[] = [
       { name: "Parsley", quantity: 10, unit: "g" },
       { name: "Salt", quantity: 1, unit: "tsp" },
     ],
+    equipment: ["湯鍋", "平底鍋"],
   },
   {
     title: "Miso Soup",
@@ -108,6 +113,7 @@ const recipes: RecipeSeed[] = [
       { name: "Scallions", quantity: 1, unit: "pieces" },
       { name: "Dashi Stock", quantity: 500, unit: "ml" },
     ],
+    equipment: ["湯鍋"],
   },
   {
     title: "Kimchi Fried Rice",
@@ -126,6 +132,7 @@ const recipes: RecipeSeed[] = [
       { name: "Sesame Oil", quantity: 1, unit: "tbsp" },
       { name: "Sesame Seeds", quantity: 1, unit: "tsp" },
     ],
+    equipment: ["炒鍋"],
   },
   {
     title: "Chicken Stir-Fry with Vegetables",
@@ -146,6 +153,7 @@ const recipes: RecipeSeed[] = [
       { name: "Cooking Oil", quantity: 2, unit: "tbsp" },
       { name: "Garlic", quantity: 2, unit: "pieces" },
     ],
+    equipment: ["炒鍋"],
   },
   {
     title: "Thai Basil Pork",
@@ -168,6 +176,7 @@ const recipes: RecipeSeed[] = [
       { name: "Cooking Oil", quantity: 2, unit: "tbsp" },
       { name: "Rice", quantity: 300, unit: "g" },
     ],
+    equipment: ["炒鍋"],
   },
   {
     title: "Creamy Mushroom Pasta",
@@ -187,6 +196,7 @@ const recipes: RecipeSeed[] = [
       { name: "Parmesan", quantity: 30, unit: "g" },
       { name: "Salt", quantity: 0.5, unit: "tsp" },
     ],
+    equipment: ["湯鍋", "平底鍋"],
   },
   {
     title: "Japanese Curry Rice",
@@ -207,6 +217,7 @@ const recipes: RecipeSeed[] = [
       { name: "Rice", quantity: 400, unit: "g" },
       { name: "Cooking Oil", quantity: 1, unit: "tbsp" },
     ],
+    equipment: ["湯鍋", "電鍋"],
   },
   {
     title: "Taiwanese Three-Cup Chicken",
@@ -228,6 +239,7 @@ const recipes: RecipeSeed[] = [
       { name: "Thai Basil", quantity: 15, unit: "g" },
       { name: "Sugar", quantity: 1, unit: "tbsp" },
     ],
+    equipment: ["炒鍋"],
   },
   {
     title: "Milk French Toast",
@@ -245,6 +257,7 @@ const recipes: RecipeSeed[] = [
       { name: "Sugar", quantity: 1, unit: "tbsp" },
       { name: "Butter", quantity: 2, unit: "tbsp" },
     ],
+    equipment: ["平底鍋"],
   },
 ];
 
@@ -270,6 +283,7 @@ async function seed() {
 
   /* ---- recipes ---- */
   await pool.query(`DELETE FROM recipe_ingredients`);
+  await pool.query(`DELETE FROM recipe_equipment`);
   await pool.query(`DELETE FROM recipes`);
 
   for (const r of recipes) {
@@ -295,6 +309,14 @@ async function seed() {
         `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit)
          VALUES ($1, $2, $3, $4)`,
         [recipeId, ing.name, ing.quantity, ing.unit]
+      );
+    }
+
+    // insert equipment
+    for (const eq of r.equipment) {
+      await pool.query(
+        `INSERT INTO recipe_equipment (recipe_id, equipment_name) VALUES ($1, $2)`,
+        [recipeId, eq]
       );
     }
   }
