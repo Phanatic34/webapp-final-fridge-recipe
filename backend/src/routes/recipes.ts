@@ -104,6 +104,35 @@ async function loadAllRecipesWithIngredients(): Promise<
   }));
 }
 
+async function loadExclusions(userId: number): Promise<Set<string>> {
+  const { rows } = await pool.query<{ name: string }>(
+    "SELECT LOWER(name) AS name FROM user_exclusions WHERE user_id = $1",
+    [userId]
+  );
+  return new Set(rows.map((r) => r.name));
+}
+
+async function loadUserEquipment(userId: number): Promise<Set<string>> {
+  const { rows } = await pool.query<{ equipment_name: string }>(
+    "SELECT equipment_name FROM user_equipment WHERE user_id = $1",
+    [userId]
+  );
+  return new Set(rows.map((r) => r.equipment_name));
+}
+
+async function loadRecipeEquipmentMap(): Promise<Map<number, string[]>> {
+  const { rows } = await pool.query<{ recipe_id: number; equipment_name: string }>(
+    "SELECT recipe_id, equipment_name FROM recipe_equipment"
+  );
+  const map = new Map<number, string[]>();
+  for (const row of rows) {
+    const arr = map.get(row.recipe_id) ?? [];
+    arr.push(row.equipment_name);
+    map.set(row.recipe_id, arr);
+  }
+  return map;
+}
+
 /**
  * Score one recipe against the fridge.
  *
@@ -189,18 +218,48 @@ function scoreRecipe(
  * Returns recipes ranked by how well they match the user's current fridge.
  * Only includes recipes with at least one matched ingredient (match_ratio > 0).
  */
-router.get("/recommended", async (_req: Request, res: Response) => {
+router.get("/recommended", async (req: Request, res: Response) => {
+  const maxTime = req.query.max_time
+    ? Number.parseInt(req.query.max_time as string, 10)
+    : null;
+
   try {
-    const [fridge, recipes] = await Promise.all([
-      loadFridge(DEFAULT_USER_ID),
-      loadAllRecipesWithIngredients(),
-    ]);
+    const [fridge, recipes, exclusions, userEquipment, recipeEquipmentMap] =
+      await Promise.all([
+        loadFridge(DEFAULT_USER_ID),
+        loadAllRecipesWithIngredients(),
+        loadExclusions(DEFAULT_USER_ID),
+        loadUserEquipment(DEFAULT_USER_ID),
+        loadRecipeEquipmentMap(),
+      ]);
 
     const scored = recipes
+      .filter((recipe) => {
+        // 1. Exclusion filter — skip recipes containing excluded ingredients
+        if (exclusions.size > 0) {
+          const hasExcluded = recipe.ingredientRows.some((ri) =>
+            exclusions.has(ri.name.toLowerCase())
+          );
+          if (hasExcluded) return false;
+        }
+
+        // 2. Equipment filter — only active when user has configured equipment
+        if (userEquipment.size > 0) {
+          const required = recipeEquipmentMap.get(recipe.id) ?? [];
+          const missingEquipment = required.filter((eq) => !userEquipment.has(eq));
+          if (missingEquipment.length > 0) return false;
+        }
+
+        // 3. Max cooking time filter
+        if (maxTime !== null && !Number.isNaN(maxTime)) {
+          if ((recipe.cooking_time ?? 0) > maxTime) return false;
+        }
+
+        return true;
+      })
       .map((r) => scoreRecipe(r, fridge.nameSet, fridge.nearExpirySet))
       .filter((r) => r.match_count > 0);
 
-    // Plan ranking: uses_near_expiry DESC, then match_ratio DESC, then missing_count ASC
     scored.sort((a, b) => {
       if (a.uses_near_expiry !== b.uses_near_expiry) {
         return a.uses_near_expiry ? -1 : 1;
@@ -211,7 +270,6 @@ router.get("/recommended", async (_req: Request, res: Response) => {
       if (a.missing_count !== b.missing_count) {
         return a.missing_count - b.missing_count;
       }
-      // Stable tie-breaker for deterministic demos
       return a.recipe.id - b.recipe.id;
     });
 
