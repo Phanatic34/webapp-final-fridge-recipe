@@ -5,6 +5,7 @@ import ingredientsRouter from "./routes/ingredients.js";
 import favoritesRouter from "./routes/favorites.js";
 import recipesRouter from "./routes/recipes.js";
 import settingsRouter from "./routes/settings.js";
+import shoppingListRouter from "./routes/shopping-list.js";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use("/api/ingredients", ingredientsRouter);
 app.use("/api/recipes", recipesRouter);
 app.use("/api/favorites", favoritesRouter);
 app.use("/api/settings", settingsRouter);
+app.use("/api/shopping-list", shoppingListRouter);
 
 app.use(
   (
