@@ -104,7 +104,11 @@ router.patch("/:id", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const { is_checked } = req.body as { is_checked: boolean };
+  const { is_checked } = req.body as { is_checked: unknown };
+  if (typeof is_checked !== "boolean") {
+    res.status(400).json({ error: "is_checked must be a boolean" });
+    return;
+  }
   try {
     const result = await pool.query<ShoppingListRow>(
       "UPDATE shopping_list SET is_checked = $1 WHERE id = $2 AND user_id = $3 RETURNING *",
