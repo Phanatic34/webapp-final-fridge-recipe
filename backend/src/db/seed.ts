@@ -325,7 +325,7 @@ async function seed() {
   await pool.query(`DELETE FROM favorites WHERE user_id = 1`);
 
   console.log(
-    `Seed complete: 8 ingredients, ${recipes.length} recipes inserted.`
+    `Seed complete: 8 ingredients, ${recipes.length} recipes, ${recipes.reduce((n, r) => n + r.equipment.length, 0)} equipment rows inserted.`
   );
   await pool.end();
 }
