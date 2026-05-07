@@ -43,27 +43,37 @@ router.put("/equipment", async (req: Request, res: Response) => {
     res.status(400).json({ error: "equipment must be an array" });
     return;
   }
+  if (!equipment.every((e) => typeof e === "string")) {
+    res.status(400).json({ error: "equipment must be an array of strings" });
+    return;
+  }
   const valid = equipment.filter((e) => PREDEFINED_EQUIPMENT.includes(e));
+  const client = await pool.connect();
   try {
-    await pool.query("DELETE FROM user_equipment WHERE user_id = $1", [USER_ID]);
+    await client.query("BEGIN");
+    await client.query("DELETE FROM user_equipment WHERE user_id = $1", [USER_ID]);
     if (valid.length > 0) {
       const placeholders = valid.map((_, i) => `($1, $${i + 2})`).join(", ");
-      await pool.query(
+      await client.query(
         `INSERT INTO user_equipment (user_id, equipment_name) VALUES ${placeholders}`,
         [USER_ID, ...valid]
       );
     }
+    await client.query("COMMIT");
     res.json({ equipment: valid });
   } catch (e) {
+    await client.query("ROLLBACK");
     console.error(e);
     res.status(500).json({ error: "Failed to update equipment" });
+  } finally {
+    client.release();
   }
 });
 
 // POST /api/settings/exclusions
 router.post("/exclusions", async (req: Request, res: Response) => {
   const { name, type } = req.body as { name: string; type: string };
-  if (!name || !["allergen", "custom"].includes(type)) {
+  if (!name?.trim() || !["allergen", "custom"].includes(type)) {
     res.status(400).json({ error: "name and valid type (allergen|custom) required" });
     return;
   }
