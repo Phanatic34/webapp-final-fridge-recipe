@@ -115,8 +115,9 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
 
 export default function RecipesPage() {
   const [cuisine, setCuisine] = useState("all");
+  const [maxTime, setMaxTime] = useState<number | null>(null);
   const { data, isLoading, isError, error, refetch } =
-    useRecommendedRecipesList();
+    useRecommendedRecipesList({ maxTime });
 
   const recommendations = data?.recommendations ?? [];
   const visible = useMemo(() => {
@@ -134,25 +135,47 @@ export default function RecipesPage() {
               依照冰箱食材推薦最適合的食譜
             </p>
           </div>
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="cuisine"
-              className="text-xs font-medium uppercase text-[#6B7280]"
-            >
-              料理類型
-            </label>
-            <select
-              id="cuisine"
-              value={cuisine}
-              onChange={(e) => setCuisine(e.target.value)}
-              className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
-            >
-              {CUISINE_OPTIONS.map((c) => (
-                <option key={c} value={c}>
-                  {CUISINE_LABELS[c] ?? c}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="cuisine"
+                className="text-xs font-medium uppercase text-[#6B7280]"
+              >
+                料理類型
+              </label>
+              <select
+                id="cuisine"
+                value={cuisine}
+                onChange={(e) => setCuisine(e.target.value)}
+                className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+              >
+                {CUISINE_OPTIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {CUISINE_LABELS[c] ?? c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Time filter */}
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium uppercase text-[#6B7280]">烹飪時間</span>
+              <div className="flex gap-1">
+                {([null, 15, 30] as const).map((time) => (
+                  <button
+                    key={time ?? "all"}
+                    type="button"
+                    onClick={() => setMaxTime(time)}
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      maxTime === time
+                        ? "bg-[#C4622D] text-white"
+                        : "border border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#C4622D] hover:text-[#C4622D]"
+                    }`}
+                  >
+                    {time === null ? "不限" : `${time} 分`}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
