@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
+import { useShoppingList } from "../hooks/useShoppingList";
 
 type Props = {
   children: ReactNode;
@@ -14,6 +15,7 @@ const navItems = [
   { to: "/", label: "我的冰箱" },
   { to: "/recipes", label: "食譜" },
   { to: "/favorites", label: "收藏" },
+  { to: "/settings", label: "設定" },
 ] as const;
 
 export function Layout({
@@ -24,6 +26,9 @@ export function Layout({
   onAddClick,
   headerRight,
 }: Props) {
+  const { data: shoppingList } = useShoppingList();
+  const uncheckedCount = shoppingList?.filter((i) => !i.is_checked).length ?? 0;
+
   const showStats =
     totalCount !== undefined &&
     nearExpiryCount !== undefined &&
@@ -73,6 +78,11 @@ export function Layout({
                   }
                 >
                   {item.label}
+                  {item.to === "/settings" && uncheckedCount > 0 && (
+                    <span className="inline-flex items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white leading-none">
+                      {uncheckedCount}
+                    </span>
+                  )}
                 </NavLink>
               </li>
             ))}
