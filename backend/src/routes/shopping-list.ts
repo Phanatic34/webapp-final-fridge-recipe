@@ -1,0 +1,147 @@
+import { Router } from "express";
+import type { Request, Response } from "express";
+import { pool } from "../db/pool.js";
+
+const router = Router();
+const USER_ID = 1;
+
+type ShoppingListRow = {
+  id: number;
+  user_id: number;
+  ingredient_name: string;
+  quantity: string | null;
+  unit: string | null;
+  is_checked: boolean;
+  source_recipe_id: number | null;
+  source_recipe_title: string | null;
+  created_at: Date;
+};
+
+// GET /api/shopping-list
+router.get("/", async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query<ShoppingListRow>(
+      `SELECT sl.*, r.title AS source_recipe_title
+       FROM shopping_list sl
+       LEFT JOIN recipes r ON sl.source_recipe_id = r.id
+       WHERE sl.user_id = $1
+       ORDER BY sl.is_checked ASC, sl.created_at ASC`,
+      [USER_ID]
+    );
+    res.json(result.rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to fetch shopping list" });
+  }
+});
+
+// POST /api/shopping-list/from-recipe/:recipeId — MUST be before /:id
+router.post("/from-recipe/:recipeId", async (req: Request, res: Response) => {
+  const recipeId = Number.parseInt(req.params.recipeId, 10);
+  if (Number.isNaN(recipeId)) {
+    res.status(400).json({ error: "Invalid recipeId" });
+    return;
+  }
+  try {
+    const [recipeIngredientsResult, fridgeResult] = await Promise.all([
+      pool.query<{ name: string; quantity: string | null; unit: string | null }>(
+        "SELECT name, quantity, unit FROM recipe_ingredients WHERE recipe_id = $1",
+        [recipeId]
+      ),
+      pool.query<{ name: string }>(
+        "SELECT LOWER(name) AS name FROM ingredients WHERE user_id = $1",
+        [USER_ID]
+      ),
+    ]);
+
+    const fridgeNames = new Set(fridgeResult.rows.map((r) => r.name));
+    const missing = recipeIngredientsResult.rows.filter(
+      (ri) => !fridgeNames.has(ri.name.toLowerCase())
+    );
+
+    if (missing.length === 0) {
+      res.json({ added: 0, items: [] });
+      return;
+    }
+
+    const inserted: ShoppingListRow[] = [];
+    for (const item of missing) {
+      const result = await pool.query<ShoppingListRow>(
+        `INSERT INTO shopping_list (user_id, ingredient_name, quantity, unit, source_recipe_id)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (user_id, ingredient_name) DO NOTHING
+         RETURNING *`,
+        [USER_ID, item.name, item.quantity ?? null, item.unit ?? null, recipeId]
+      );
+      if (result.rows.length > 0) inserted.push(result.rows[0]);
+    }
+
+    res.status(201).json({ added: inserted.length, items: inserted });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to add items to shopping list" });
+  }
+});
+
+// DELETE /api/shopping-list/clear-checked — MUST be before /:id
+router.delete("/clear-checked", async (_req: Request, res: Response) => {
+  try {
+    await pool.query(
+      "DELETE FROM shopping_list WHERE user_id = $1 AND is_checked = TRUE",
+      [USER_ID]
+    );
+    res.status(204).send();
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to clear checked items" });
+  }
+});
+
+// PATCH /api/shopping-list/:id — toggle is_checked
+router.patch("/:id", async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const { is_checked } = req.body as { is_checked: unknown };
+  if (typeof is_checked !== "boolean") {
+    res.status(400).json({ error: "is_checked must be a boolean" });
+    return;
+  }
+  try {
+    const result = await pool.query<ShoppingListRow>(
+      "UPDATE shopping_list SET is_checked = $1 WHERE id = $2 AND user_id = $3 RETURNING *",
+      [is_checked, id, USER_ID]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "Item not found" });
+      return;
+    }
+    res.json(result.rows[0]);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to update item" });
+  }
+});
+
+// DELETE /api/shopping-list/:id — MUST be after /clear-checked
+router.delete("/:id", async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  try {
+    await pool.query(
+      "DELETE FROM shopping_list WHERE id = $1 AND user_id = $2",
+      [id, USER_ID]
+    );
+    res.status(204).send();
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to delete item" });
+  }
+});
+
+export default router;

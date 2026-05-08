@@ -5,6 +5,7 @@ import { Layout } from "../components/Layout";
 import { useRecipeDetail } from "../hooks/useRecipes";
 import { useIngredientsList } from "../hooks/useIngredients";
 import { useAddFavorite, useFavoritesList, useRemoveFavorite } from "../hooks/useFavorites";
+import { useAddFromRecipe } from "../hooks/useShoppingList";
 import { CUISINE_LABELS, DIFFICULTY_LABELS } from "../utils/labels";
 
 export default function RecipeDetailPage() {
@@ -25,6 +26,7 @@ export default function RecipeDetailPage() {
 
   const addFav = useAddFavorite();
   const removeFav = useRemoveFavorite();
+  const addFromRecipe = useAddFromRecipe();
 
   const fridgeByName = useMemo(() => {
     const m = new Map<string, (typeof fridgeIngredients)[number]>();
@@ -33,6 +35,11 @@ export default function RecipeDetailPage() {
     }
     return m;
   }, [fridgeIngredients]);
+
+  const hasMissingIngredients = useMemo(
+    () => recipe?.ingredients.some((ing) => !fridgeByName.has(ing.name.toLowerCase())) ?? false,
+    [recipe, fridgeByName]
+  );
 
   async function toggleFavorite() {
     if (!recipe) return;
@@ -135,6 +142,29 @@ export default function RecipeDetailPage() {
               <h3 className="mb-3 font-['Noto_Serif_TC'] text-lg font-semibold text-[#1B2E22]">
                 食材
               </h3>
+              {hasMissingIngredients && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    disabled={addFromRecipe.isPending}
+                    onClick={() => {
+                      addFromRecipe.mutate(recipeId, {
+                        onSuccess: (data) => {
+                          if (data.added === 0) {
+                            toast.info("缺少食材已全部在購物清單中");
+                          } else {
+                            toast.success(`已加入 ${data.added} 項食材到購物清單`);
+                          }
+                        },
+                        onError: () => toast.error("加入購物清單失敗"),
+                      });
+                    }}
+                    className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition"
+                  >
+                    {addFromRecipe.isPending ? "加入中…" : "＋ 缺少食材加入購物清單"}
+                  </button>
+                </div>
+              )}
               <ul className="grid gap-2 sm:grid-cols-2">
                 {recipe.ingredients.map((ing) => {
                   const key = ing.name.toLowerCase();
