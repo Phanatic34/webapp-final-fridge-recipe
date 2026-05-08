@@ -4,6 +4,7 @@ import {
   fetchRecipe,
   fetchRecommendedRecipes,
   type RecipeListParams,
+  type RecommendedParams,
 } from "../api/recipes";
 
 export function useRecipesList(params: RecipeListParams = {}) {
@@ -22,10 +23,10 @@ export function useRecipeDetail(id: number) {
   });
 }
 
-export function useRecommendedRecipesList() {
+export function useRecommendedRecipesList(params: RecommendedParams = {}) {
   return useQuery({
-    queryKey: ["recipes", "recommended"] as const,
-    queryFn: () => fetchRecommendedRecipes(),
+    queryKey: ["recipes", "recommended", params.maxTime ?? "all"] as const,
+    queryFn: () => fetchRecommendedRecipes(params),
     placeholderData: keepPreviousData,
   });
 }

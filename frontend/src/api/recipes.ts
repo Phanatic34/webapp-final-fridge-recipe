@@ -26,11 +26,20 @@ export async function fetchRecipe(id: number): Promise<RecipeDetail> {
   return data.recipe;
 }
 
-export async function fetchRecommendedRecipes(): Promise<{
-  recommendations: RecipeRecommendation[];
-}> {
+export type RecommendedParams = {
+  maxTime?: number | null;
+};
+
+export async function fetchRecommendedRecipes(
+  params: RecommendedParams = {}
+): Promise<{ recommendations: RecipeRecommendation[] }> {
+  const search = new URLSearchParams();
+  if (params.maxTime != null) {
+    search.set("max_time", String(params.maxTime));
+  }
+  const q = search.toString();
   const { data } = await api.get<{ recommendations: RecipeRecommendation[] }>(
-    "/api/recipes/recommended"
+    `/api/recipes/recommended${q ? `?${q}` : ""}`
   );
   return data;
 }
