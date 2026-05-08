@@ -2,7 +2,7 @@ export interface ShoppingListItem {
   id: number;
   user_id: number;
   ingredient_name: string;
-  quantity: number | null;
+  quantity: string | null;   // pg returns DECIMAL as string
   unit: string | null;
   is_checked: boolean;
   source_recipe_id: number | null;

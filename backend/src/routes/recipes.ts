@@ -257,7 +257,7 @@ router.get("/recommended", async (req: Request, res: Response) => {
 
         // 3. Max cooking time filter
         if (maxTime !== null) {
-          if ((recipe.cooking_time ?? 0) > maxTime) return false;
+          if (recipe.cooking_time == null || recipe.cooking_time > maxTime) return false;
         }
 
         return true;

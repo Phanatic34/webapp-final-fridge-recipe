@@ -56,6 +56,10 @@ export function SettingsPage() {
   function handleAddCustom() {
     const trimmed = customInput.trim();
     if (!trimmed) return;
+    if (trimmed.includes("/")) {
+      toast.error("食材名稱不可包含斜線（/）");
+      return;
+    }
     addExclusion.mutate(
       { name: trimmed, type: "custom" },
       {
