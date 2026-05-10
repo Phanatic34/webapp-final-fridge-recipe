@@ -173,25 +173,25 @@ function scoreRecipe(
   const explanation: string[] = [];
 
   if (total === 0) {
-    explanation.push("This recipe has no ingredient list.");
+    explanation.push("此食譜尚無食材清單。");
   } else if (matched.length === total) {
-    explanation.push("You have all the ingredients!");
+    explanation.push("你已擁有所有所需食材！");
   } else {
     explanation.push(
-      `You have ${matched.length} of ${total} required ingredients.`
+      `你已擁有 ${matched.length} / ${total} 項所需食材。`
     );
   }
 
   if (usesNearExpiry) {
     explanation.push(
-      `Helps use near-expiry: ${nearExpiryUsed.join(", ")}.`
+      `可消耗即將到期食材：${nearExpiryUsed.join("、")}。`
     );
   }
 
   if (missing.length > 0 && missing.length <= 3) {
-    explanation.push(`Only missing: ${missing.join(", ")}.`);
+    explanation.push(`僅缺：${missing.join("、")}。`);
   } else if (missing.length > 3) {
-    explanation.push(`Missing ${missing.length} ingredients.`);
+    explanation.push(`尚缺 ${missing.length} 項食材。`);
   }
 
   return {

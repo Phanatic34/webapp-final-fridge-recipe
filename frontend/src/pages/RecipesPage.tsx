@@ -47,9 +47,20 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
   return (
     <Link
       to={`/recipes/${rec.recipe.id}`}
-      className={`group flex flex-col rounded-2xl p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ring}`}
+      className={`group flex flex-col rounded-2xl overflow-hidden shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ring}`}
     >
-      <div className="flex flex-col gap-2">
+      {rec.recipe.image_url ? (
+        <img
+          src={rec.recipe.image_url}
+          alt={rec.recipe.title}
+          className="h-36 w-full object-cover"
+        />
+      ) : (
+        <div className="flex h-36 w-full items-center justify-center bg-slate-100 text-4xl">
+          🍽️
+        </div>
+      )}
+      <div className="flex flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-lg font-semibold leading-tight text-[#1B2E22] group-hover:text-[#C4622D]">
             {rec.recipe.title}

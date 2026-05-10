@@ -87,6 +87,10 @@ src/
     settings.ts        # Settings interface
     shoppingList.ts    # ShoppingListItem interface
   pages/               # FridgePage, RecipesPage, RecipeDetailPage, FavoritesPage, SettingsPage
+                       # RecipesPage: recipe cards show image (or 🍽️ placeholder) + recommendation info
+                       # RecipeDetailPage: shows image banner, recommendation analysis panel (match ratio,
+                       #   explanation, missing ingredients chips) via useRecommendedRecipesList cache;
+                       #   panel is hidden when no recommendation exists (e.g. fridge empty)
   components/          # Shared UI: Layout, IngredientCard, FormModal, ExpiryBadge, etc.
   utils/
     labels.ts          # Traditional Chinese display labels for category/status/cuisine/difficulty enums
@@ -100,6 +104,7 @@ src/
 - **-0.05 × missing_count** penalty to break ties
 - Sort order: `uses_near_expiry DESC → match_ratio DESC → missing_count ASC → id ASC`
 - Recipes with zero matches are excluded from results
+- `explanation` array is in Traditional Chinese (hardcoded strings in `scoreRecipe()`)
 
 Filters applied before scoring (in order):
 1. **Exclusion filter**: skip recipes containing any ingredient in `user_exclusions` (only active when exclusions exist)
