@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Layout } from "../components/Layout";
-import { useRecipeDetail } from "../hooks/useRecipes";
+import { useRecipeDetail, useRecommendedRecipesList } from "../hooks/useRecipes";
 import { useIngredientsList } from "../hooks/useIngredients";
 import { useAddFavorite, useFavoritesList, useRemoveFavorite } from "../hooks/useFavorites";
 import { useAddFromRecipe } from "../hooks/useShoppingList";
@@ -19,6 +19,12 @@ export default function RecipeDetailPage() {
   const {
     data: fridgeIngredients = [],
   } = useIngredientsList({});
+
+  const { data: recommendedData } = useRecommendedRecipesList();
+  const recommendation = useMemo(
+    () => recommendedData?.recommendations.find((r) => r.recipe.id === recipeId) ?? null,
+    [recommendedData, recipeId]
+  );
 
   const { data: favoritesData } = useFavoritesList();
   const favorites = favoritesData ?? [];
@@ -113,6 +119,18 @@ export default function RecipeDetailPage() {
 
         {recipe && (
           <>
+            {recipe.image_url ? (
+              <img
+                src={recipe.image_url}
+                alt={recipe.title}
+                className="w-full rounded-2xl object-cover max-h-64"
+              />
+            ) : (
+              <div className="flex w-full items-center justify-center rounded-2xl bg-slate-100 text-6xl" style={{ height: "12rem" }}>
+                🍽️
+              </div>
+            )}
+
             <div>
               <h2 className="font-['Noto_Serif_TC'] text-2xl font-bold text-[#1B2E22]">
                 {recipe.title}
@@ -137,6 +155,48 @@ export default function RecipeDetailPage() {
                 )}
               </div>
             </div>
+
+            {recommendation && (
+              <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB] space-y-3">
+                <h3 className="font-['Noto_Serif_TC'] text-base font-semibold text-[#1B2E22]">推薦分析</h3>
+
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full bg-[#059669]/10 px-3 py-1 text-sm font-medium text-[#059669] ring-1 ring-[#059669]/20">
+                    符合度 {Math.round(recommendation.match_ratio * 100)}%
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 ring-1 ring-slate-200">
+                    {recommendation.match_count} / {recommendation.total_ingredients} 項食材
+                  </span>
+                  {recommendation.uses_near_expiry && (
+                    <span className="rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800 ring-1 ring-amber-200">
+                      可消耗即將到期食材
+                    </span>
+                  )}
+                </div>
+
+                <ul className="space-y-1">
+                  {recommendation.explanation.map((line, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-[#6B7280]">
+                      <span className="mt-0.5 shrink-0 text-[#059669]">✓</span>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+
+                {recommendation.missing_ingredients.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#6B7280]">尚缺食材</p>
+                    <div className="flex flex-wrap gap-1">
+                      {recommendation.missing_ingredients.map((name) => (
+                        <span key={name} className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700 ring-1 ring-red-200">
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
 
             <section>
               <h3 className="mb-3 font-['Noto_Serif_TC'] text-lg font-semibold text-[#1B2E22]">
