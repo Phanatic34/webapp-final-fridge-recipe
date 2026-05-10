@@ -87,10 +87,15 @@ src/
     settings.ts        # Settings interface
     shoppingList.ts    # ShoppingListItem interface
   pages/               # FridgePage, RecipesPage, RecipeDetailPage, FavoritesPage, SettingsPage
-                       # RecipesPage: recipe cards show image (or 🍽️ placeholder) + recommendation info
+                       # RecipesPage: toggle between "推薦食譜" (recommended, match>0) and "全部食譜"
+                       #   (all recipes via useRecipesList); empty recommended state shows "瀏覽全部食譜" button;
+                       #   time filter options: null/15/30/45/60 min; cuisine filter works in both modes
                        # RecipeDetailPage: shows image banner, recommendation analysis panel (match ratio,
                        #   explanation, missing ingredients chips) via useRecommendedRecipesList cache;
-                       #   panel is hidden when no recommendation exists (e.g. fridge empty)
+                       #   panel is hidden when no recommendation exists (e.g. fridge empty);
+                       #   instructions rendered as numbered steps (strips leading "N." from seed data)
+                       # SettingsPage: shopping list items have "加入冰箱" button — calls useCreateIngredient
+                       #   with quantity parsed from string (defaults to 1) and unit (defaults to "pieces")
   components/          # Shared UI: Layout, IngredientCard, FormModal, ExpiryBadge, etc.
   utils/
     labels.ts          # Traditional Chinese display labels for category/status/cuisine/difficulty enums

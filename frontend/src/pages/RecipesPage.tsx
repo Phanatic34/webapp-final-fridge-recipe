@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import { useRecommendedRecipesList } from "../hooks/useRecipes";
-import type { RecipeRecommendation } from "../types/recipe";
+import { useRecommendedRecipesList, useRecipesList } from "../hooks/useRecipes";
+import type { Recipe, RecipeRecommendation } from "../types/recipe";
 import { CUISINE_LABELS, DIFFICULTY_LABELS } from "../utils/labels";
 
 const CUISINE_OPTIONS = [
@@ -30,6 +30,45 @@ function DifficultyBadge({ difficulty }: { difficulty: string | null }) {
     >
       {DIFFICULTY_LABELS[d] ?? d}
     </span>
+  );
+}
+
+function AllRecipeCard({ recipe }: { recipe: Recipe }) {
+  return (
+    <Link
+      to={`/recipes/${recipe.id}`}
+      className="group flex flex-col rounded-2xl overflow-hidden bg-white shadow-sm ring-1 ring-[#E5E7EB] transition hover:-translate-y-0.5 hover:shadow-md"
+    >
+      {recipe.image_url ? (
+        <img src={recipe.image_url} alt={recipe.title} className="h-36 w-full object-cover" />
+      ) : (
+        <div className="flex h-36 w-full items-center justify-center bg-slate-100 text-4xl">🍽️</div>
+      )}
+      <div className="flex flex-col gap-2 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-lg font-semibold leading-tight text-[#1B2E22] group-hover:text-[#C4622D]">
+            {recipe.title}
+          </h3>
+          {recipe.cuisine && (
+            <span className="shrink-0 rounded bg-[#1B2E22]/10 px-2 py-0.5 text-xs font-medium text-[#1B2E22]">
+              {CUISINE_LABELS[recipe.cuisine] ?? recipe.cuisine}
+            </span>
+          )}
+        </div>
+        {recipe.description && (
+          <p className="line-clamp-2 text-sm text-[#6B7280]">{recipe.description}</p>
+        )}
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
+          <DifficultyBadge difficulty={recipe.difficulty} />
+          {recipe.cooking_time !== null && (
+            <span className="text-xs text-[#6B7280]">{recipe.cooking_time} 分鐘</span>
+          )}
+          {recipe.servings !== null && (
+            <span className="text-xs text-[#6B7280]">{recipe.servings} 人份</span>
+          )}
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -127,14 +166,23 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
 export default function RecipesPage() {
   const [cuisine, setCuisine] = useState("all");
   const [maxTime, setMaxTime] = useState<number | null>(null);
-  const { data, isLoading, isError, error, refetch } =
-    useRecommendedRecipesList({ maxTime });
+  const [mode, setMode] = useState<"recommended" | "all">("recommended");
 
-  const recommendations = data?.recommendations ?? [];
+  const { data: recData, isLoading: recLoading, isError: recError, error: recErr, refetch: recRefetch } =
+    useRecommendedRecipesList({ maxTime });
+  const { data: allData, isLoading: allLoading, isError: allError, error: allErr, refetch: allRefetch } =
+    useRecipesList({ cuisine });
+
+  const recommendations = recData?.recommendations ?? [];
   const visible = useMemo(() => {
     if (cuisine === "all") return recommendations;
     return recommendations.filter((r) => r.recipe.cuisine === cuisine);
   }, [recommendations, cuisine]);
+
+  const isLoading = mode === "recommended" ? recLoading : allLoading;
+  const isError = mode === "recommended" ? recError : allError;
+  const error = mode === "recommended" ? recErr : allErr;
+  const refetch = mode === "recommended" ? recRefetch : allRefetch;
 
   return (
     <Layout>
@@ -142,9 +190,22 @@ export default function RecipesPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="font-['Noto_Serif_TC'] text-lg font-semibold text-[#1B2E22]">食譜</h2>
-            <p className="text-sm text-[#6B7280]">
-              依照冰箱食材推薦最適合的食譜
-            </p>
+            <div className="mt-2 flex gap-1">
+              {(["recommended", "all"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    mode === m
+                      ? "bg-[#1B2E22] text-white"
+                      : "border border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#1B2E22] hover:text-[#1B2E22]"
+                  }`}
+                >
+                  {m === "recommended" ? "推薦食譜" : "全部食譜"}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1">
@@ -171,7 +232,7 @@ export default function RecipesPage() {
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium uppercase text-[#6B7280]">烹飪時間</span>
               <div className="flex gap-1">
-                {([null, 15, 30] as const).map((time) => (
+                {([null, 15, 30, 45, 60] as const).map((time) => (
                   <button
                     key={time ?? "all"}
                     type="button"
@@ -221,8 +282,8 @@ export default function RecipesPage() {
           </div>
         )}
 
-        {!isLoading && !isError && visible.length === 0 && (
-          <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#E5E7EB] py-16 text-center">
+        {!isLoading && !isError && mode === "recommended" && visible.length === 0 && (
+          <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[#E5E7EB] py-16 text-center">
             <p className="text-[#6B7280]">目前沒有符合推薦的食譜。</p>
             {cuisine !== "all" && (
               <button
@@ -233,13 +294,34 @@ export default function RecipesPage() {
                 清除篩選
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setMode("all")}
+              className="rounded-lg border border-[#1B2E22] px-4 py-2 text-sm font-medium text-[#1B2E22] hover:bg-[#1B2E22] hover:text-white transition"
+            >
+              瀏覽全部食譜
+            </button>
           </div>
         )}
 
-        {!isLoading && !isError && visible.length > 0 && (
+        {!isLoading && !isError && mode === "all" && (allData ?? []).length === 0 && (
+          <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#E5E7EB] py-16 text-center">
+            <p className="text-[#6B7280]">找不到食譜。</p>
+          </div>
+        )}
+
+        {!isLoading && !isError && mode === "recommended" && visible.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((rec) => (
               <RecommendationCard key={rec.recipe.id} rec={rec} />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && !isError && mode === "all" && (allData ?? []).length > 0 && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {(allData ?? []).map((recipe) => (
+              <AllRecipeCard key={recipe.id} recipe={recipe} />
             ))}
           </div>
         )}

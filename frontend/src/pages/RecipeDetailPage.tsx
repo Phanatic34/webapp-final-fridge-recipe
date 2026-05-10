@@ -302,13 +302,21 @@ export default function RecipeDetailPage() {
                 <h3 className="mb-3 font-['Noto_Serif_TC'] text-lg font-semibold text-[#1B2E22]">
                   作法
                 </h3>
-                <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
-                  {recipe.instructions.split("\n").map((line, i) => (
-                    <p key={i} className="py-1 text-sm text-[#6B7280]">
-                      {line}
-                    </p>
-                  ))}
-                </div>
+                <ol className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB] space-y-3">
+                  {recipe.instructions
+                    .split("\n")
+                    .map((l) => l.trim())
+                    .filter((l) => l.length > 0)
+                    .map((l) => l.replace(/^\d+[.)]\s*/, ""))
+                    .map((step, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1B2E22] text-xs font-bold text-white">
+                          {i + 1}
+                        </span>
+                        <p className="text-sm leading-relaxed text-[#6B7280]">{step}</p>
+                      </li>
+                    ))}
+                </ol>
               </section>
             )}
           </>

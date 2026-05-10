@@ -13,6 +13,7 @@ import {
   useDeleteShoppingItem,
   useClearCheckedItems,
 } from "../hooks/useShoppingList";
+import { useCreateIngredient } from "../hooks/useIngredients";
 
 export function SettingsPage() {
   const { data: settings, isLoading: settingsLoading } = useSettings();
@@ -23,6 +24,7 @@ export function SettingsPage() {
   const toggleItem = useToggleShoppingItem();
   const deleteItem = useDeleteShoppingItem();
   const clearChecked = useClearCheckedItems();
+  const createIngredient = useCreateIngredient();
   const [customInput, setCustomInput] = useState("");
 
   function handleEquipmentToggle(name: string) {
@@ -254,6 +256,30 @@ export function SettingsPage() {
                       </span>
                     )}
                   </span>
+                  <button
+                    onClick={() => {
+                      const qty = item.quantity != null ? parseFloat(item.quantity) : NaN;
+                      createIngredient.mutate(
+                        {
+                          name: item.ingredient_name,
+                          quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
+                          unit: item.unit ?? "pieces",
+                          category: null,
+                          status: "fresh",
+                          expiry_date: null,
+                        },
+                        {
+                          onSuccess: () => toast.success(`「${item.ingredient_name}」已加入冰箱`),
+                          onError: () => toast.error("加入冰箱失敗"),
+                        }
+                      );
+                    }}
+                    disabled={createIngredient.isPending}
+                    className="shrink-0 rounded border border-emerald-300 px-2 py-0.5 text-xs text-emerald-700 hover:bg-emerald-50 transition disabled:opacity-40"
+                    aria-label={`將 ${item.ingredient_name} 加入冰箱`}
+                  >
+                    加入冰箱
+                  </button>
                   <button
                     onClick={() => deleteItem.mutate(item.id)}
                     className="text-gray-300 hover:text-red-400 transition"
