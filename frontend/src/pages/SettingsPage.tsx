@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Layout } from "../components/Layout";
 import {
@@ -89,7 +90,7 @@ export function SettingsPage() {
       <div className="mx-auto max-w-5xl px-4 py-6 space-y-8">
 
         {/* Equipment Section */}
-        <section>
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 280, damping: 24, delay: 0 }}>
           <h2 className="text-lg font-semibold text-[#1B2E22] mb-1">我的廚房器具</h2>
           <p className="text-sm text-gray-500 mb-4">
             勾選你擁有的器具，系統只推薦你能製作的食譜。未勾選任何器具時不進行器具篩選。
@@ -116,12 +117,12 @@ export function SettingsPage() {
               })}
             </div>
           )}
-        </section>
+        </motion.section>
 
         <hr className="border-gray-200" />
 
         {/* Exclusions Section */}
-        <section>
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 280, damping: 24, delay: 0.1 }}>
           <h2 className="text-lg font-semibold text-[#1B2E22] mb-1">不吃的食材</h2>
           <p className="text-sm text-gray-500 mb-4">
             含有以下食材的食譜將從推薦中排除。
@@ -198,12 +199,12 @@ export function SettingsPage() {
                 ))}
             </div>
           )}
-        </section>
+        </motion.section>
 
         <hr className="border-gray-200" />
 
         {/* Shopping List Section */}
-        <section>
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 280, damping: 24, delay: 0.2 }}>
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-lg font-semibold text-[#1B2E22]">
               購物清單
@@ -229,7 +230,10 @@ export function SettingsPage() {
           {shoppingList.length === 0 ? (
             <p className="text-sm text-gray-400">購物清單是空的。去食譜頁選一道食譜，點「加入購物清單」。</p>
           ) : (
-            <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white overflow-hidden">
+            <ul
+              className="divide-y divide-white/30 rounded-2xl overflow-hidden"
+              style={{ background: "rgba(255,255,255,0.52)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.72)" }}
+            >
               {shoppingList.map((item) => (
                 <li
                   key={item.id}
@@ -291,7 +295,7 @@ export function SettingsPage() {
               ))}
             </ul>
           )}
-        </section>
+        </motion.section>
 
       </div>
     </Layout>
