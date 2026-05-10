@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 import { Layout } from "../components/Layout";
 import { useFavoritesList, useRemoveFavorite } from "../hooks/useFavorites";
 import type { Recipe } from "../types/recipe";
@@ -13,7 +14,10 @@ type CardProps = {
 
 function RecipeCard({ recipe, onRemove, isRemoving }: CardProps) {
   return (
-    <div className="group relative flex flex-col rounded-2xl bg-white shadow-sm ring-1 ring-[#E5E7EB] transition hover:-translate-y-0.5 hover:shadow-md">
+    <div
+      className="group relative flex flex-col rounded-2xl overflow-hidden transition hover:-translate-y-1"
+      style={{ background: "rgba(255,255,255,0.52)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.72)", boxShadow: "0 4px 16px rgba(0,0,0,0.07)" }}
+    >
       <Link to={`/recipes/${recipe.id}`} className="flex flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-lg font-semibold leading-tight text-[#1B2E22] group-hover:text-[#C4622D]">
@@ -117,16 +121,25 @@ export default function FavoritesPage() {
         )}
 
         {!isLoading && !isError && recipes.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            initial="hidden"
+            animate="show"
+            variants={{ show: { transition: { staggerChildren: 0.08 } } }}
+          >
             {recipes.map((recipe) => (
-              <RecipeCard
+              <motion.div
                 key={recipe.id}
-                recipe={recipe}
-                onRemove={handleRemove}
-                isRemoving={removeFav.isPending && removeFav.variables === recipe.id}
-              />
+                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } } }}
+              >
+                <RecipeCard
+                  recipe={recipe}
+                  onRemove={handleRemove}
+                  isRemoving={removeFav.isPending && removeFav.variables === recipe.id}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </Layout>
