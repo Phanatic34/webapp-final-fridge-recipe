@@ -39,7 +39,7 @@ No test runner is configured; there are no test scripts.
 
 ### Stack
 - **Backend**: Express + TypeScript, runs on port 3001. Entry: `backend/src/server.ts`
-- **Frontend**: React 18 + Vite + TypeScript + Tailwind. Entry: `frontend/src/main.tsx`
+- **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS + framer-motion (spring animations, stagger, AnimatePresence). Entry: `frontend/src/main.tsx`
 - **Database**: PostgreSQL via `pg` pool (`backend/src/db/pool.ts`)
 - **Frontend → Backend**: Vite proxies `/api/*` to `http://localhost:3001`; axios client at `frontend/src/api/client.ts` uses empty `baseURL` to leverage the proxy
 
@@ -97,6 +97,9 @@ src/
                        # SettingsPage: shopping list items have "加入冰箱" button — calls useCreateIngredient
                        #   with quantity parsed from string (defaults to 1) and unit (defaults to "pieces")
   components/          # Shared UI: Layout, IngredientCard, FormModal, ExpiryBadge, etc.
+                       # ProgressRing.tsx — SVG circular progress ring (props: ratio 0-1, size, strokeWidth)
+  hooks/
+    useCountUp.ts      # count-up animation hook (target: number, duration?: number) → animated number
   utils/
     labels.ts          # Traditional Chinese display labels for category/status/cuisine/difficulty enums
                        # (DB enum values stay English; only display strings are translated here)
@@ -136,3 +139,11 @@ All server state is managed via TanStack Query. Hooks in `src/hooks/` wrap API f
 - `["shopping-list"]` — shopping list items
 
 `useRecommendedRecipesList` accepts `{ maxTime?: number | null }` and includes it in the query key so time filter changes trigger a re-fetch.
+
+### UI Style
+- Design: "Warm Glass" — warm gradient background + glassmorphism card surfaces
+- Background: `.app-bg` class (multi-layer radial + linear gradient, defined in `index.css`)
+- Glass cards: `rgba(255,255,255,0.52)` background + `backdrop-filter: blur()` + white border glow
+- Animations: framer-motion spring hover (IngredientCard), stagger fade-in (all list pages), AnimatePresence spring modal (FormModal, DeleteConfirmModal), shimmer skeleton (IngredientListSkeleton)
+- ProgressRing: SVG ring on RecipesPage cards replacing match% text; color: green ≥100%, amber ≥60%, orange <60%
+- useCountUp: rAF-based count-up with easeOutQuart easing, used in FridgePage stats
