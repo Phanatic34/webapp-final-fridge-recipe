@@ -12,10 +12,10 @@ type Props = {
 };
 
 const navItems = [
-  { to: "/", label: "我的冰箱" },
-  { to: "/recipes", label: "食譜" },
+  { to: "/",          label: "我的冰箱" },
+  { to: "/recipes",   label: "食譜" },
   { to: "/favorites", label: "收藏" },
-  { to: "/settings", label: "設定" },
+  { to: "/settings",  label: "設定" },
 ] as const;
 
 export function Layout({
@@ -28,15 +28,22 @@ export function Layout({
 }: Props) {
   const { data: shoppingList } = useShoppingList();
   const uncheckedCount = shoppingList?.filter((i) => !i.is_checked).length ?? 0;
-
   const showStats =
     totalCount !== undefined &&
     nearExpiryCount !== undefined &&
     expiredCount !== undefined;
 
   return (
-    <div className="min-h-screen bg-[#FAFAF7]">
-      <header className="bg-[#1B2E22] shadow-md">
+    <div className="app-bg">
+      {/* 毛玻璃 Header */}
+      <header
+        className="sticky top-0 z-50 border-b border-white/10 shadow-md"
+        style={{
+          background: "rgba(27,46,34,0.88)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+        }}
+      >
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-['Noto_Serif_TC'] text-xl font-bold tracking-tight text-white">
@@ -54,7 +61,7 @@ export function Layout({
               <button
                 type="button"
                 onClick={onAddClick}
-                className="rounded-lg bg-[#C4622D] px-4 py-2 text-sm font-medium text-white shadow hover:bg-[#b3561f] focus:outline-none focus:ring-2 focus:ring-[#C4622D] focus:ring-offset-2 focus:ring-offset-[#1B2E22]"
+                className="rounded-lg bg-[#C4622D] px-4 py-2 text-sm font-medium text-white shadow-lg shadow-[#C4622D]/30 hover:bg-[#b3561f] transition focus:outline-none focus:ring-2 focus:ring-[#C4622D] focus:ring-offset-2 focus:ring-offset-[#1B2E22]"
               >
                 新增食材
               </button>
@@ -79,7 +86,7 @@ export function Layout({
                 >
                   {item.label}
                   {item.to === "/settings" && uncheckedCount > 0 && (
-                    <span className="inline-flex items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white leading-none">
+                    <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white leading-none">
                       {uncheckedCount}
                     </span>
                   )}
@@ -90,40 +97,31 @@ export function Layout({
         </nav>
       </header>
 
+      {/* Stats bar */}
       {showStats && (
-        <section className="border-b border-[#E5E7EB] bg-[#FAFAF7]">
+        <section className="border-b border-white/20">
           <div className="mx-auto grid max-w-5xl gap-4 px-4 py-4 sm:grid-cols-3">
-            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-[#E5E7EB]">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">
-                總計
-              </p>
-              <p className="text-2xl font-semibold text-[#1B2E22]">
-                {totalCount}
-              </p>
-            </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-amber-100">
-              <p className="text-xs font-medium uppercase tracking-wide text-amber-800">
-                即將到期
-              </p>
-              <p className="text-2xl font-semibold text-amber-900">
-                {nearExpiryCount}
-              </p>
-            </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-red-100">
-              <p className="text-xs font-medium uppercase tracking-wide text-red-800">
-                已過期
-              </p>
-              <p className="text-2xl font-semibold text-red-900">
-                {expiredCount}
-              </p>
-            </div>
+            {[
+              { label: "總計",     value: totalCount,      cls: "text-[#1B2E22]",   lCls: "text-[#6B7280]" },
+              { label: "即將到期", value: nearExpiryCount,  cls: "text-amber-900",   lCls: "text-amber-800" },
+              { label: "已過期",   value: expiredCount,     cls: "text-red-900",     lCls: "text-red-800" },
+            ].map(({ label, value, cls, lCls }) => (
+              <div
+                key={label}
+                className="rounded-xl p-3 shadow-glass"
+                style={{ background: "rgba(255,255,255,0.52)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.72)" }}
+              >
+                <p className={`text-xs font-medium uppercase tracking-wide ${lCls}`}>{label}</p>
+                <p className={`text-2xl font-semibold ${cls}`}>{value}</p>
+              </div>
+            ))}
           </div>
         </section>
       )}
 
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
 
-      <footer className="border-t border-[#E5E7EB] bg-[#FAFAF7] py-6 text-center text-xs text-[#6B7280]">
+      <footer className="border-t border-white/20 py-6 text-center text-xs text-[#6B7280]">
         冰箱食譜推薦
       </footer>
     </div>
