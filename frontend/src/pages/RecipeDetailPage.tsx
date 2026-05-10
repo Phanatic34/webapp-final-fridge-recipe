@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { motion } from "framer-motion";
 import { useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Layout } from "../components/Layout";
@@ -157,7 +158,10 @@ export default function RecipeDetailPage() {
             </div>
 
             {recommendation && (
-              <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB] space-y-3">
+              <section
+                className="rounded-2xl p-4 space-y-3"
+                style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.72)", boxShadow: "0 4px 16px rgba(0,0,0,0.07)" }}
+              >
                 <h3 className="font-['Noto_Serif_TC'] text-base font-semibold text-[#1B2E22]">推薦分析</h3>
 
                 <div className="flex flex-wrap gap-2">
@@ -225,7 +229,12 @@ export default function RecipeDetailPage() {
                   </button>
                 </div>
               )}
-              <ul className="grid gap-2 sm:grid-cols-2">
+              <motion.ul
+                className="grid gap-2 sm:grid-cols-2"
+                initial="hidden"
+                animate="show"
+                variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+              >
                 {recipe.ingredients.map((ing) => {
                   const key = ing.name.toLowerCase();
                   const fridgeItem = fridgeByName.get(key);
@@ -253,9 +262,11 @@ export default function RecipeDetailPage() {
                       : null;
 
                   return (
-                    <li
+                    <motion.li
                       key={ing.id}
-                      className="flex flex-col gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-[#E5E7EB] sm:flex-row sm:items-center sm:justify-between"
+                      variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } } }}
+                      className="flex flex-col gap-2 rounded-xl p-3 sm:flex-row sm:items-center sm:justify-between"
+                      style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.72)", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
                     >
                       <div className="flex items-center gap-2">
                         <span
@@ -291,10 +302,10 @@ export default function RecipeDetailPage() {
                           </span>
                         )}
                       </div>
-                    </li>
+                    </motion.li>
                   );
                 })}
-              </ul>
+              </motion.ul>
             </section>
 
             {recipe.instructions && (

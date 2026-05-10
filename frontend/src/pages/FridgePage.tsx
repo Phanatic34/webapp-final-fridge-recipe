@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { useCountUp } from "../hooks/useCountUp";
 import { Layout } from "../components/Layout";
 import { IngredientList } from "../components/IngredientList";
 import { IngredientListSkeleton } from "../components/IngredientListSkeleton";
@@ -53,6 +55,10 @@ export default function FridgePage() {
       expired,
     };
   }, [ingredients]);
+
+  const totalDisplay      = useCountUp(stats.total);
+  const nearExpiryDisplay = useCountUp(stats.nearExpiry);
+  const expiredDisplay    = useCountUp(stats.expired);
 
   const filteredIngredients = useMemo(() => {
     if (!search.trim()) return ingredients;
@@ -132,9 +138,9 @@ export default function FridgePage() {
   return (
     <>
       <Layout
-        totalCount={stats.total}
-        nearExpiryCount={stats.nearExpiry}
-        expiredCount={stats.expired}
+        totalCount={totalDisplay}
+        nearExpiryCount={nearExpiryDisplay}
+        expiredCount={expiredDisplay}
         onAddClick={openCreate}
       >
         <div className="space-y-6">
@@ -252,11 +258,17 @@ export default function FridgePage() {
           )}
 
           {!isLoading && !isError && filteredIngredients.length > 0 && (
-            <IngredientList
-              ingredients={filteredIngredients}
-              onEdit={openEdit}
-              onDelete={(ing) => setDeleteTarget(ing)}
-            />
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={{ show: { transition: { staggerChildren: 0.07 } } }}
+            >
+              <IngredientList
+                ingredients={filteredIngredients}
+                onEdit={openEdit}
+                onDelete={(ing) => setDeleteTarget(ing)}
+              />
+            </motion.div>
           )}
         </div>
       </Layout>

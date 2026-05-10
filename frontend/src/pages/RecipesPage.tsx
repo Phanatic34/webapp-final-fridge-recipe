@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Layout } from "../components/Layout";
+import { ProgressRing } from "../components/ProgressRing";
 import { useRecommendedRecipesList, useRecipesList } from "../hooks/useRecipes";
 import type { Recipe, RecipeRecommendation } from "../types/recipe";
 import { CUISINE_LABELS, DIFFICULTY_LABELS } from "../utils/labels";
@@ -143,20 +145,14 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
           ))}
         </div>
 
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
+        <div className="mt-auto flex flex-wrap items-center gap-3 pt-3">
+          <ProgressRing ratio={rec.match_ratio} size={44} />
           {rec.recipe.cooking_time !== null && (
-            <span className="text-xs text-[#6B7280]">
-              {rec.recipe.cooking_time} 分鐘
-            </span>
+            <span className="text-xs text-[#6B7280]">{rec.recipe.cooking_time} 分鐘</span>
           )}
           {rec.recipe.servings !== null && (
-            <span className="text-xs text-[#6B7280]">
-              {rec.recipe.servings} 人份
-            </span>
+            <span className="text-xs text-[#6B7280]">{rec.recipe.servings} 人份</span>
           )}
-          <span className="ml-auto text-xs text-[#6B7280]">
-            符合度：{Math.round(rec.match_ratio * 100)}%
-          </span>
         </div>
       </div>
     </Link>
@@ -311,19 +307,39 @@ export default function RecipesPage() {
         )}
 
         {!isLoading && !isError && mode === "recommended" && visible.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            initial="hidden"
+            animate="show"
+            variants={{ show: { transition: { staggerChildren: 0.08 } } }}
+          >
             {visible.map((rec) => (
-              <RecommendationCard key={rec.recipe.id} rec={rec} />
+              <motion.div
+                key={rec.recipe.id}
+                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } } }}
+              >
+                <RecommendationCard rec={rec} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {!isLoading && !isError && mode === "all" && (allData ?? []).length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            initial="hidden"
+            animate="show"
+            variants={{ show: { transition: { staggerChildren: 0.08 } } }}
+          >
             {(allData ?? []).map((recipe) => (
-              <AllRecipeCard key={recipe.id} recipe={recipe} />
+              <motion.div
+                key={recipe.id}
+                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } } }}
+              >
+                <AllRecipeCard recipe={recipe} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </Layout>
