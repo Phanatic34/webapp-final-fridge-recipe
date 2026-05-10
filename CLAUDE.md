@@ -51,6 +51,8 @@ src/
     ingredients.ts     # CRUD for fridge inventory
     recipes.ts         # recipe list, detail, and recommendation engine
     favorites.ts       # add/remove/list saved recipes
+    settings.ts        # equipment + exclusion CRUD; exports PREDEFINED_EQUIPMENT, PREDEFINED_ALLERGENS
+    shopping-list.ts   # shopping list CRUD (add from recipe, toggle checked, delete, clear checked)
   types/
     ingredient.ts      # Zod schemas + TS types + enums (UNITS, CATEGORIES, STATUSES, NEAR_EXPIRY_DAYS)
     recipe.ts          # TS types for recipes, ingredients, recommendations
@@ -67,17 +69,24 @@ src/
 ### Frontend layout
 ```
 src/
-  App.tsx              # React Router routes: /, /recipes, /recipes/:id, /favorites
+  App.tsx              # React Router routes: /, /recipes, /recipes/:id, /favorites, /settings
   api/
     client.ts          # axios instance; normalizes error messages from backend
     ingredients.ts     # API functions for ingredient CRUD
-    recipes.ts         # API functions for recipe list, detail, recommendations
+    recipes.ts         # API functions for recipe list, detail, recommendations (accepts RecommendedParams)
     favorites.ts       # API functions for favorites
+    settings.ts        # fetchSettings, updateEquipment, addExclusion, removeExclusion
+    shoppingList.ts    # fetchShoppingList, addFromRecipe, toggleShoppingItem, deleteShoppingItem, clearCheckedItems
   hooks/
     useIngredients.ts  # TanStack Query hooks wrapping ingredients API
     useRecipes.ts      # TanStack Query hooks wrapping recipes API
     useFavorites.ts    # TanStack Query hooks wrapping favorites API
-  pages/               # FridgePage, RecipesPage, RecipeDetailPage, FavoritesPage
+    useSettings.ts     # useSettings, useUpdateEquipment, useAddExclusion, useRemoveExclusion
+    useShoppingList.ts # useShoppingList, useAddFromRecipe, useToggleShoppingItem, useDeleteShoppingItem, useClearCheckedItems
+  types/
+    settings.ts        # Settings interface
+    shoppingList.ts    # ShoppingListItem interface
+  pages/               # FridgePage, RecipesPage, RecipeDetailPage, FavoritesPage, SettingsPage
   components/          # Shared UI: Layout, IngredientCard, FormModal, ExpiryBadge, etc.
   utils/
     labels.ts          # Traditional Chinese display labels for category/status/cuisine/difficulty enums
@@ -92,13 +101,28 @@ src/
 - Sort order: `uses_near_expiry DESC → match_ratio DESC → missing_count ASC → id ASC`
 - Recipes with zero matches are excluded from results
 
+Filters applied before scoring (in order):
+1. **Exclusion filter**: skip recipes containing any ingredient in `user_exclusions` (only active when exclusions exist)
+2. **Equipment filter**: skip recipes requiring equipment the user doesn't own (only active when `user_equipment` is non-empty)
+3. **Time filter**: `?max_time=N` query param excludes recipes where `cooking_time` is null or `> N`
+
 Near-expiry threshold is `NEAR_EXPIRY_DAYS = 3` (defined in `backend/src/types/ingredient.ts`).
 
 ### Data model notes
 - `user_id` is hardcoded to `1` throughout (no auth yet — single-user MVP)
 - `ingredients.expiry_date` is stored as `DATE`; `computeExpiryMeta` always compares UTC date-only to avoid timezone drift
 - `recipe_ingredients.name` matching against `ingredients.name` is **case-insensitive lowercase** (`ri.name.toLowerCase()`)
+- `user_exclusions.name` is stored and queried as lowercase; equipment names are also lowercased in memory for comparison
+- `shopping_list` has `UNIQUE(user_id, ingredient_name)` — duplicate adds from different recipes are silently ignored (`ON CONFLICT DO NOTHING`)
+- `ShoppingListItem.quantity` is `string | null` on the frontend (PostgreSQL returns `DECIMAL` as string)
 - Ingredient validation uses Zod schemas from `types/ingredient.ts`; the `validateBody` middleware is applied to all mutating routes
 
 ### Frontend data-fetching pattern
-All server state is managed via TanStack Query. Hooks in `src/hooks/` wrap API functions and call `queryClient.invalidateQueries({ queryKey: ["ingredients"] | ["recipes"] | ["favorites"] })` on mutation success. The query key hierarchy is `["ingredients", sort, category]`.
+All server state is managed via TanStack Query. Hooks in `src/hooks/` wrap API functions and call `queryClient.invalidateQueries(...)` on mutation success:
+- `["ingredients"]` — fridge inventory
+- `["recipes"]` — all recipe queries (recommended, list, detail); invalidated when equipment/exclusions change
+- `["favorites"]` — saved recipes
+- `["settings"]` — equipment and exclusion preferences
+- `["shopping-list"]` — shopping list items
+
+`useRecommendedRecipesList` accepts `{ maxTime?: number | null }` and includes it in the query key so time filter changes trigger a re-fetch.
