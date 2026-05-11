@@ -24,5 +24,5 @@ body {
     rgba(255,255,255,0.4) 75%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
+  animation: shimmer 2.4s ease-in-out infinite;
 }

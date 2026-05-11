@@ -10,7 +10,7 @@ type Props = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 18 },
-  show:   { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } },
+  show:   { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 180, damping: 20 } },
 };
 
 export function IngredientList({ ingredients, onEdit, onDelete }: Props) {
