@@ -13,9 +13,9 @@ type Props = {
 const panelVariants = {
   hidden: { opacity: 0, scale: 0.90, y: 20 },
   show:   { opacity: 1, scale: 1,    y: 0,
-             transition: { type: "spring" as const, stiffness: 400, damping: 30 } },
+             transition: { type: "spring" as const, stiffness: 220, damping: 22 } },
   exit:   { opacity: 0, scale: 0.94, y: 12,
-             transition: { duration: 0.16 } },
+             transition: { duration: 0.35 } },
 };
 
 export function DeleteConfirmModal({

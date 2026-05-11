@@ -17,9 +17,9 @@ const overlayVariants = {
 const panelVariants = {
   hidden: { opacity: 0, scale: 0.92, y: 24 },
   show:   { opacity: 1, scale: 1,    y: 0,
-             transition: { type: "spring" as const, stiffness: 380, damping: 28 } },
+             transition: { type: "spring" as const, stiffness: 200, damping: 20 } },
   exit:   { opacity: 0, scale: 0.95, y: 16,
-             transition: { duration: 0.18 } },
+             transition: { duration: 0.35 } },
 };
 
 export function FormModal({ open, title, children, onClose }: Props) {

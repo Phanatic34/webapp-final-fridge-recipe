@@ -42,7 +42,7 @@ export function ProgressRing({ ratio, size = 48, strokeWidth = 4 }: Props) {
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 0.8s ease, stroke 0.4s ease" }}
+          style={{ transition: "stroke-dashoffset 1.4s ease, stroke 0.7s ease" }}
         />
       </svg>
       <span

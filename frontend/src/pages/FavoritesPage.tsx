@@ -125,12 +125,12 @@ export default function FavoritesPage() {
             className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
             initial="hidden"
             animate="show"
-            variants={{ show: { transition: { staggerChildren: 0.08 } } }}
+            variants={{ show: { transition: { staggerChildren: 0.14 } } }}
           >
             {recipes.map((recipe) => (
               <motion.div
                 key={recipe.id}
-                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } } }}
+                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 180, damping: 20 } } }}
               >
                 <RecipeCard
                   recipe={recipe}

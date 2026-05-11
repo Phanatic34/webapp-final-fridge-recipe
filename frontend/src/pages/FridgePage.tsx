@@ -261,7 +261,7 @@ export default function FridgePage() {
             <motion.div
               initial="hidden"
               animate="show"
-              variants={{ show: { transition: { staggerChildren: 0.07 } } }}
+              variants={{ show: { transition: { staggerChildren: 0.13 } } }}
             >
               <IngredientList
                 ingredients={filteredIngredients}

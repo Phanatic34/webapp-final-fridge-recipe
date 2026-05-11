@@ -90,7 +90,7 @@ export function SettingsPage() {
       <div className="mx-auto max-w-5xl px-4 py-6 space-y-8">
 
         {/* Equipment Section */}
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 280, damping: 24, delay: 0 }}>
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 160, damping: 20, delay: 0 }}>
           <h2 className="text-lg font-semibold text-[#1B2E22] mb-1">我的廚房器具</h2>
           <p className="text-sm text-gray-500 mb-4">
             勾選你擁有的器具，系統只推薦你能製作的食譜。未勾選任何器具時不進行器具篩選。
@@ -122,7 +122,7 @@ export function SettingsPage() {
         <hr className="border-gray-200" />
 
         {/* Exclusions Section */}
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 280, damping: 24, delay: 0.1 }}>
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 160, damping: 20, delay: 0.2 }}>
           <h2 className="text-lg font-semibold text-[#1B2E22] mb-1">不吃的食材</h2>
           <p className="text-sm text-gray-500 mb-4">
             含有以下食材的食譜將從推薦中排除。
@@ -204,7 +204,7 @@ export function SettingsPage() {
         <hr className="border-gray-200" />
 
         {/* Shopping List Section */}
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 280, damping: 24, delay: 0.2 }}>
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 160, damping: 20, delay: 0.4 }}>
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-lg font-semibold text-[#1B2E22]">
               購物清單

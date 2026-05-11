@@ -66,7 +66,7 @@ export function IngredientCard({ ingredient, onEdit, onDelete }: Props) {
       className={`flex flex-col rounded-2xl p-4 ${glassBase} ${highlight}`}
       style={{ background: bg, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
       whileHover={{ y: -4, boxShadow: "0 8px 32px rgba(0,0,0,0.11), inset 0 1px 0 rgba(255,255,255,0.9)" }}
-      transition={{ type: "spring", stiffness: 340, damping: 24 }}
+      transition={{ type: "spring", stiffness: 180, damping: 18 }}
     >
       <div className="flex flex-1 flex-col gap-2">
         <div className="flex items-start justify-between gap-2">

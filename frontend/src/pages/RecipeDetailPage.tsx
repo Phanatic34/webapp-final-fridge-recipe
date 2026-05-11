@@ -233,7 +233,7 @@ export default function RecipeDetailPage() {
                 className="grid gap-2 sm:grid-cols-2"
                 initial="hidden"
                 animate="show"
-                variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+                variants={{ show: { transition: { staggerChildren: 0.11 } } }}
               >
                 {recipe.ingredients.map((ing) => {
                   const key = ing.name.toLowerCase();
