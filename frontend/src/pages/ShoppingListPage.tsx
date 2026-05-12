@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Layout } from "../components/Layout";
 import {
   useShoppingList,
   useToggleShoppingItem,
+  useUpdateShoppingItemQuantity,
   useDeleteShoppingItem,
   useClearCheckedItems,
 } from "../hooks/useShoppingList";
@@ -12,9 +14,11 @@ import { useCreateIngredient } from "../hooks/useIngredients";
 export default function ShoppingListPage() {
   const { data: shoppingList = [] } = useShoppingList();
   const toggleItem = useToggleShoppingItem();
+  const updateQuantity = useUpdateShoppingItemQuantity();
   const deleteItem = useDeleteShoppingItem();
   const clearChecked = useClearCheckedItems();
   const createIngredient = useCreateIngredient();
+  const [editingQty, setEditingQty] = useState<Record<number, string>>({});
 
   const uncheckedCount = shoppingList.filter((i) => !i.is_checked).length;
   const hasChecked = shoppingList.some((i) => i.is_checked);
@@ -89,9 +93,30 @@ export default function ShoppingListPage() {
                 >
                   {item.ingredient_name}
                   {item.quantity != null && (
-                    <span className="ml-1 text-gray-400">
-                      × {item.quantity}
-                      {item.unit ? ` ${item.unit}` : ""}
+                    <span className="ml-1 inline-flex items-center gap-1 text-gray-400">
+                      ×
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="any"
+                        value={editingQty[item.id] ?? item.quantity}
+                        onChange={(e) =>
+                          setEditingQty((prev) => ({ ...prev, [item.id]: e.target.value }))
+                        }
+                        onBlur={() => {
+                          const val = parseFloat(editingQty[item.id] ?? "");
+                          if (!Number.isNaN(val) && val > 0 && String(val) !== item.quantity) {
+                            updateQuantity.mutate(
+                              { id: item.id, quantity: val },
+                              { onError: () => toast.error("更新數量失敗") }
+                            );
+                          }
+                          setEditingQty((prev) => { const n = { ...prev }; delete n[item.id]; return n; });
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                        className="w-16 rounded border border-gray-200 bg-white px-1 py-0.5 text-center text-sm text-gray-700 focus:border-[#C4622D] focus:outline-none"
+                      />
+                      {item.unit ?? ""}
                     </span>
                   )}
                   {item.source_recipe_title && (

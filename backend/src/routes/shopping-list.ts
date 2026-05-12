@@ -97,22 +97,38 @@ router.delete("/clear-checked", async (_req: Request, res: Response) => {
   }
 });
 
-// PATCH /api/shopping-list/:id — toggle is_checked
+// PATCH /api/shopping-list/:id — update is_checked and/or quantity
 router.patch("/:id", async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const { is_checked } = req.body as { is_checked: unknown };
-  if (typeof is_checked !== "boolean") {
+  const { is_checked, quantity } = req.body as { is_checked?: unknown; quantity?: unknown };
+
+  if (is_checked !== undefined && typeof is_checked !== "boolean") {
     res.status(400).json({ error: "is_checked must be a boolean" });
     return;
   }
+  if (quantity !== undefined && (typeof quantity !== "number" || quantity <= 0)) {
+    res.status(400).json({ error: "quantity must be a positive number" });
+    return;
+  }
+
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  if (is_checked !== undefined) { fields.push(`is_checked = $${fields.length + 1}`); values.push(is_checked); }
+  if (quantity !== undefined)   { fields.push(`quantity = $${fields.length + 1}`);   values.push(quantity); }
+
+  if (fields.length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
   try {
     const result = await pool.query<ShoppingListRow>(
-      "UPDATE shopping_list SET is_checked = $1 WHERE id = $2 AND user_id = $3 RETURNING *",
-      [is_checked, id, USER_ID]
+      `UPDATE shopping_list SET ${fields.join(", ")} WHERE id = $${fields.length + 1} AND user_id = $${fields.length + 2} RETURNING *`,
+      [...values, id, USER_ID]
     );
     if (result.rows.length === 0) {
       res.status(404).json({ error: "Item not found" });

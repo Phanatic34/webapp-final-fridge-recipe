@@ -3,6 +3,7 @@ import {
   fetchShoppingList,
   addFromRecipe,
   toggleShoppingItem,
+  updateShoppingItemQuantity,
   deleteShoppingItem,
   clearCheckedItems,
 } from "../api/shoppingList";
@@ -24,6 +25,15 @@ export function useToggleShoppingItem() {
   return useMutation({
     mutationFn: ({ id, is_checked }: { id: number; is_checked: boolean }) =>
       toggleShoppingItem(id, is_checked),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping-list"] }),
+  });
+}
+
+export function useUpdateShoppingItemQuantity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, quantity }: { id: number; quantity: number }) =>
+      updateShoppingItemQuantity(id, quantity),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping-list"] }),
   });
 }

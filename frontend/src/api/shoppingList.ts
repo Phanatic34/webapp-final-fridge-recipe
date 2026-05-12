@@ -23,6 +23,14 @@ export async function toggleShoppingItem(
   return data;
 }
 
+export async function updateShoppingItemQuantity(
+  id: number,
+  quantity: number
+): Promise<ShoppingListItem> {
+  const { data } = await api.patch<ShoppingListItem>(`/api/shopping-list/${id}`, { quantity });
+  return data;
+}
+
 export async function deleteShoppingItem(id: number): Promise<void> {
   await api.delete(`/api/shopping-list/${id}`);
 }
