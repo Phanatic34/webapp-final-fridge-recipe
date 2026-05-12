@@ -15,6 +15,30 @@ body {
   min-height: 100vh;
 }
 
+/* 手機版 toast：從左側滑入滑出、寬度依文字縮小 */
+@media (max-width: 639px) {
+  [data-sonner-toaster][data-x-position="left"] {
+    --width: auto;
+  }
+  [data-sonner-toaster][data-x-position="left"] [data-sonner-toast] {
+    width: fit-content !important;
+    min-width: unset !important;
+    max-width: 80vw !important;
+    animation: sonner-slide-in-left 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  }
+  [data-sonner-toaster][data-x-position="left"] [data-sonner-toast][data-removed="true"] {
+    animation: sonner-slide-out-left 0.35s ease-in forwards !important;
+  }
+  @keyframes sonner-slide-in-left {
+    from { translate: -110% 0; opacity: 0; }
+    to   { translate: 0 0;     opacity: 1; }
+  }
+  @keyframes sonner-slide-out-left {
+    from { translate: 0 0;     opacity: 1; }
+    to   { translate: -110% 0; opacity: 0; }
+  }
+}
+
 /* Shimmer 骨架屏背景 */
 .shimmer {
   background: linear-gradient(

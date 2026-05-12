@@ -6,6 +6,7 @@ type Props = {
   title: string;
   children: ReactNode;
   onClose: () => void;
+  fabOrigin?: boolean;
 };
 
 const overlayVariants = {
@@ -22,12 +23,25 @@ const panelVariants = {
              transition: { duration: 0.35 } },
 };
 
-export function FormModal({ open, title, children, onClose }: Props) {
+const fabPanelVariants = {
+  hidden: { opacity: 0, scale: 0 },
+  show:   { opacity: 1, scale: 1,
+             transition: { type: "spring" as const, stiffness: 220, damping: 22 } },
+  exit:   { opacity: 0, scale: 0,
+             transition: { duration: 0.25 } },
+};
+
+export function FormModal({ open, title, children, onClose, fabOrigin }: Props) {
+  const fromFab =
+    !!fabOrigin &&
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 639px)").matches;
+
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-40 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="form-modal-title"
@@ -53,8 +67,9 @@ export function FormModal({ open, title, children, onClose }: Props) {
               backdropFilter: "blur(24px)",
               WebkitBackdropFilter: "blur(24px)",
               border: "1px solid rgba(255,255,255,0.85)",
+              ...(fromFab ? { transformOrigin: "bottom right" } : {}),
             }}
-            variants={panelVariants}
+            variants={fromFab ? fabPanelVariants : panelVariants}
             initial="hidden"
             animate="show"
             exit="exit"
