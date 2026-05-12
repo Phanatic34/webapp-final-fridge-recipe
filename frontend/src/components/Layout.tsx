@@ -191,18 +191,6 @@ export function Layout({
                   ))}
                 </ul>
 
-                {/* 新增食材 — 只在冰箱頁顯示 */}
-                {onAddClick && (
-                  <div className="px-6 py-4 border-t border-white/10">
-                    <button
-                      type="button"
-                      onClick={() => { onAddClick(); setMenuOpen(false); }}
-                      className="w-full rounded-lg bg-[#C4622D] px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-[#C4622D]/30 hover:bg-[#b3561f] transition"
-                    >
-                      新增食材
-                    </button>
-                  </div>
-                )}
               </nav>
             </motion.div>
           )}
