@@ -145,5 +145,7 @@ All server state is managed via TanStack Query. Hooks in `src/hooks/` wrap API f
 - Background: `.app-bg` class (multi-layer radial + linear gradient, defined in `index.css`)
 - Glass cards: `rgba(255,255,255,0.52)` background + `backdrop-filter: blur()` + white border glow
 - Animations: framer-motion spring hover (IngredientCard), stagger fade-in (all list pages), AnimatePresence spring modal (FormModal, DeleteConfirmModal), shimmer skeleton (IngredientListSkeleton)
-- ProgressRing: SVG ring on RecipesPage cards replacing match% text; color: green ≥100%, amber ≥60%, orange <60%
-- useCountUp: rAF-based count-up with easeOutQuart easing, used in FridgePage stats
+- Animation timing (tuned for visibility): modal spring stiffness 200/damping 20, exit 0.35s; card hover spring stiffness 180/damping 18; list item spring stiffness 180/damping 20; stagger interval 0.11–0.14s; settings section delays 0/0.2/0.4s
+- ProgressRing: SVG ring on RecipesPage cards replacing match% text; color: green ≥100%, amber ≥60%, orange <60%; fill transition 1.4s
+- useCountUp: rAF-based count-up with easeOutQuart easing, used in FridgePage stats; default duration 1400ms
+- Shimmer skeleton animation: 2.4s cycle

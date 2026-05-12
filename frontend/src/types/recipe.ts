@@ -36,4 +36,5 @@ export type RecipeRecommendation = {
   near_expiry_ingredient_count: number;
   near_expiry_ingredients: string[];
   explanation: string[];
+  ai_explanation: string;
 };

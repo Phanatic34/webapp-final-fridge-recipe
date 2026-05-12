@@ -137,13 +137,20 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
 
         <p className="text-xs text-[#6B7280]">{missingLabel}</p>
 
-        <div className="pt-2">
-          {rec.explanation.slice(0, 3).map((line, i) => (
-            <p key={i} className="text-sm text-[#6B7280]">
-              {line}
-            </p>
-          ))}
-        </div>
+        {rec.ai_explanation ? (
+          <div className="pt-2">
+            <p className="text-xs font-medium text-[#059669] mb-0.5">🤖 AI 推薦理由</p>
+            <p className="text-sm text-[#1B2E22] line-clamp-1">{rec.ai_explanation}</p>
+          </div>
+        ) : (
+          <div className="pt-2">
+            {rec.explanation.slice(0, 3).map((line, i) => (
+              <p key={i} className="text-sm text-[#6B7280]">
+                {line}
+              </p>
+            ))}
+          </div>
+        )}
 
         <div className="mt-auto flex flex-wrap items-center gap-3 pt-3">
           <ProgressRing ratio={rec.match_ratio} size={44} />
