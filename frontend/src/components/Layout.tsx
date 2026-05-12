@@ -12,10 +12,11 @@ type Props = {
 };
 
 const navItems = [
-  { to: "/",          label: "我的冰箱" },
-  { to: "/recipes",   label: "食譜" },
-  { to: "/favorites", label: "收藏" },
-  { to: "/settings",  label: "設定" },
+  { to: "/",              label: "我的冰箱" },
+  { to: "/recipes",       label: "食譜" },
+  { to: "/favorites",     label: "收藏" },
+  { to: "/shopping-list", label: "購物清單" },
+  { to: "/settings",      label: "設定" },
 ] as const;
 
 export function Layout({
@@ -85,7 +86,7 @@ export function Layout({
                   }
                 >
                   {item.label}
-                  {item.to === "/settings" && uncheckedCount > 0 && (
+                  {item.to === "/shopping-list" && uncheckedCount > 0 && (
                     <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white leading-none">
                       {uncheckedCount}
                     </span>

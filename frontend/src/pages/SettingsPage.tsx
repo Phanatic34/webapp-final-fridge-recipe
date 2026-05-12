@@ -8,24 +8,12 @@ import {
   useAddExclusion,
   useRemoveExclusion,
 } from "../hooks/useSettings";
-import {
-  useShoppingList,
-  useToggleShoppingItem,
-  useDeleteShoppingItem,
-  useClearCheckedItems,
-} from "../hooks/useShoppingList";
-import { useCreateIngredient } from "../hooks/useIngredients";
 
 export function SettingsPage() {
   const { data: settings, isLoading: settingsLoading } = useSettings();
-  const { data: shoppingList = [] } = useShoppingList();
   const updateEquipment = useUpdateEquipment();
   const addExclusion = useAddExclusion();
   const removeExclusion = useRemoveExclusion();
-  const toggleItem = useToggleShoppingItem();
-  const deleteItem = useDeleteShoppingItem();
-  const clearChecked = useClearCheckedItems();
-  const createIngredient = useCreateIngredient();
   const [customInput, setCustomInput] = useState("");
 
   function handleEquipmentToggle(name: string) {
@@ -74,16 +62,6 @@ export function SettingsPage() {
       }
     );
   }
-
-  function handleClearChecked() {
-    clearChecked.mutate(undefined, {
-      onSuccess: () => toast.success("已清除已購項目"),
-      onError: () => toast.error("清除失敗"),
-    });
-  }
-
-  const uncheckedCount = shoppingList.filter((i) => !i.is_checked).length;
-  const hasChecked = shoppingList.some((i) => i.is_checked);
 
   return (
     <Layout>
@@ -198,105 +176,6 @@ export function SettingsPage() {
                   </span>
                 ))}
             </div>
-          )}
-        </motion.section>
-
-        <hr className="border-gray-200" />
-
-        {/* Shopping List Section */}
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 160, damping: 20, delay: 0.4 }}>
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-semibold text-[#1B2E22]">
-              購物清單
-              {uncheckedCount > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center rounded-full bg-amber-500 px-2 py-0.5 text-xs text-white">
-                  {uncheckedCount}
-                </span>
-              )}
-            </h2>
-            {hasChecked && (
-              <button
-                onClick={handleClearChecked}
-                className="text-sm text-gray-400 hover:text-gray-600"
-              >
-                清空已購
-              </button>
-            )}
-          </div>
-          <p className="text-sm text-gray-500 mb-4">
-            從食譜詳情頁加入的缺少食材。
-          </p>
-
-          {shoppingList.length === 0 ? (
-            <p className="text-sm text-gray-400">購物清單是空的。去食譜頁選一道食譜，點「加入購物清單」。</p>
-          ) : (
-            <ul
-              className="divide-y divide-white/30 rounded-2xl overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.52)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.72)" }}
-            >
-              {shoppingList.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-center gap-3 px-4 py-3"
-                >
-                  <input
-                    type="checkbox"
-                    checked={item.is_checked}
-                    onChange={() =>
-                      toggleItem.mutate({ id: item.id, is_checked: !item.is_checked })
-                    }
-                    className="h-4 w-4 rounded border-gray-300 text-[#C4622D]"
-                  />
-                  <span className={`flex-1 text-sm ${item.is_checked ? "line-through text-gray-400" : "text-gray-800"}`}>
-                    {item.ingredient_name}
-                    {item.quantity != null && (
-                      <span className="ml-1 text-gray-400">
-                        × {item.quantity}{item.unit ? ` ${item.unit}` : ""}
-                      </span>
-                    )}
-                    {item.source_recipe_title && (
-                      <span className="ml-2 text-xs text-gray-400">
-                        （來自《{item.source_recipe_title}》）
-                      </span>
-                    )}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const qty = item.quantity != null ? parseFloat(item.quantity) : NaN;
-                      createIngredient.mutate(
-                        {
-                          name: item.ingredient_name,
-                          quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
-                          unit: item.unit ?? "pieces",
-                          category: null,
-                          status: "fresh",
-                          expiry_date: null,
-                        },
-                        {
-                          onSuccess: () => {
-                            deleteItem.mutate(item.id);
-                            toast.success(`「${item.ingredient_name}」已加入冰箱`);
-                          },
-                          onError: () => toast.error("加入冰箱失敗"),
-                        }
-                      );
-                    }}
-                    disabled={createIngredient.isPending}
-                    className="shrink-0 rounded border border-emerald-300 px-2 py-0.5 text-xs text-emerald-700 hover:bg-emerald-50 transition disabled:opacity-40"
-                    aria-label={`將 ${item.ingredient_name} 加入冰箱`}
-                  >
-                    加入冰箱
-                  </button>
-                  <button
-                    onClick={() => deleteItem.mutate(item.id)}
-                    className="text-gray-300 hover:text-red-400 transition"
-                    aria-label="刪除"
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
           )}
         </motion.section>
 
