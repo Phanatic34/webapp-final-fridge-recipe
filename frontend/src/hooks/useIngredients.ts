@@ -30,6 +30,7 @@ export function useCreateIngredient() {
     mutationFn: (payload: CreatePayload) => createIngredient(payload),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["ingredients"] });
+      void qc.invalidateQueries({ queryKey: ["recipes"] });
     },
   });
 }
@@ -46,6 +47,7 @@ export function useUpdateIngredient() {
     }) => updateIngredient(id, payload),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["ingredients"] });
+      void qc.invalidateQueries({ queryKey: ["recipes"] });
     },
   });
 }
@@ -56,6 +58,7 @@ export function useDeleteIngredient() {
     mutationFn: (id: number) => deleteIngredient(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["ingredients"] });
+      void qc.invalidateQueries({ queryKey: ["recipes"] });
     },
   });
 }
