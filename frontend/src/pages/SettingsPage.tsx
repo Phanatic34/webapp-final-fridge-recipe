@@ -273,7 +273,10 @@ export function SettingsPage() {
                           expiry_date: null,
                         },
                         {
-                          onSuccess: () => toast.success(`「${item.ingredient_name}」已加入冰箱`),
+                          onSuccess: () => {
+                            deleteItem.mutate(item.id);
+                            toast.success(`「${item.ingredient_name}」已加入冰箱`);
+                          },
                           onError: () => toast.error("加入冰箱失敗"),
                         }
                       );
