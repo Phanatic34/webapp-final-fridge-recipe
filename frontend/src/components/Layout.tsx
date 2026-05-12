@@ -203,7 +203,7 @@ export function Layout({
       {/* Stats bar */}
       {showStats && (
         <section className="border-b border-white/20">
-          <div className="mx-auto grid max-w-5xl gap-4 px-4 py-4 sm:grid-cols-3">
+          <div className="mx-auto grid max-w-5xl grid-cols-3 gap-2 px-4 py-3 sm:gap-4 sm:py-4">
             {[
               { label: "總計",     value: totalCount,      cls: "text-[#1B2E22]",   lCls: "text-[#6B7280]" },
               { label: "即將到期", value: nearExpiryCount,  cls: "text-amber-900",   lCls: "text-amber-800" },
@@ -211,11 +211,11 @@ export function Layout({
             ].map(({ label, value, cls, lCls }) => (
               <div
                 key={label}
-                className="rounded-xl p-3 shadow-glass"
+                className="flex flex-col rounded-xl p-2 sm:p-3 shadow-glass text-center sm:text-left"
                 style={{ background: "rgba(255,255,255,0.52)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.72)" }}
               >
-                <p className={`text-xs font-medium uppercase tracking-wide ${lCls}`}>{label}</p>
-                <p className={`text-2xl font-semibold ${cls}`}>{value}</p>
+                <p className={`order-2 sm:order-1 mt-1 sm:mt-0 text-xs font-medium sm:uppercase sm:tracking-wide ${lCls}`}>{label}</p>
+                <p className={`order-1 sm:order-2 text-2xl font-bold sm:font-semibold leading-none ${cls}`}>{value}</p>
               </div>
             ))}
           </div>
