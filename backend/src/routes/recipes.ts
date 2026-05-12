@@ -106,11 +106,11 @@ async function loadAllRecipesWithIngredients(): Promise<
 }
 
 const ALLERGEN_ALIASES: Record<string, string[]> = {
-  "花生": ["peanut", "peanuts", "groundnut", "groundnuts"],
-  "蛋":   ["egg", "eggs"],
-  "乳製品": ["milk", "butter", "cream", "cheese", "yogurt", "yoghurt", "dairy", "whey", "lactose"],
-  "麩質": ["wheat", "flour", "gluten", "barley", "rye", "oat", "oats", "spelt"],
-  "海鮮": ["shrimp", "prawns", "crab", "lobster", "fish", "salmon", "tuna", "squid", "oyster", "clam", "scallop", "seafood"],
+  "花生": ["花生醬", "花生油", "peanut", "peanuts", "groundnut", "groundnuts"],
+  "蛋":   ["雞蛋", "鴨蛋", "蛋白", "蛋黃", "皮蛋", "鹹蛋", "egg", "eggs"],
+  "乳製品": ["牛奶", "鮮奶", "奶油", "奶粉", "鮮奶油", "起司", "起士", "乳酪", "優格", "煉乳", "milk", "butter", "cream", "cheese", "yogurt", "yoghurt", "dairy", "whey", "lactose"],
+  "麩質": ["麵粉", "小麥", "麵條", "麵包", "烏龍麵", "義大利麵", "麥片", "燕麥", "wheat", "flour", "gluten", "barley", "rye", "oat", "oats", "spelt", "pasta", "noodles"],
+  "海鮮": ["蝦", "蝦仁", "草蝦", "龍蝦", "蟹", "螃蟹", "魚", "鮭魚", "鮪魚", "鯖魚", "鱈魚", "花枝", "魷魚", "章魚", "蛤蜊", "蚵仔", "牡蠣", "干貝", "shrimp", "shrimps", "prawn", "prawns", "crab", "lobster", "fish", "salmon", "tuna", "squid", "oyster", "clam", "scallop", "seafood"],
 };
 
 async function loadExclusions(userId: number): Promise<Set<string>> {
