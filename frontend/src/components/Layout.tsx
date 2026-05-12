@@ -78,7 +78,7 @@ export function Layout({
                   to={item.to}
                   end={item.to === "/"}
                   className={({ isActive }) =>
-                    `inline-block rounded-t-lg border-b-2 px-4 py-2 text-sm font-medium transition ${
+                    `inline-block rounded-t-lg border-b-2 px-2 py-2 text-xs sm:px-4 sm:text-sm font-medium transition ${
                       isActive
                         ? "border-[#C4622D] text-[#C4622D]"
                         : "border-transparent text-white/70 hover:border-white/30 hover:text-white"
