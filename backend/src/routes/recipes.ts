@@ -105,12 +105,27 @@ async function loadAllRecipesWithIngredients(): Promise<
   }));
 }
 
+const ALLERGEN_ALIASES: Record<string, string[]> = {
+  "花生": ["peanut", "peanuts", "groundnut", "groundnuts"],
+  "蛋":   ["egg", "eggs"],
+  "乳製品": ["milk", "butter", "cream", "cheese", "yogurt", "yoghurt", "dairy", "whey", "lactose"],
+  "麩質": ["wheat", "flour", "gluten", "barley", "rye", "oat", "oats", "spelt"],
+  "海鮮": ["shrimp", "prawns", "crab", "lobster", "fish", "salmon", "tuna", "squid", "oyster", "clam", "scallop", "seafood"],
+};
+
 async function loadExclusions(userId: number): Promise<Set<string>> {
   const { rows } = await pool.query<{ name: string }>(
     "SELECT LOWER(name) AS name FROM user_exclusions WHERE user_id = $1",
     [userId]
   );
-  return new Set(rows.map((r) => r.name));
+  const set = new Set<string>();
+  for (const row of rows) {
+    set.add(row.name);
+    for (const alias of ALLERGEN_ALIASES[row.name] ?? []) {
+      set.add(alias.toLowerCase());
+    }
+  }
+  return set;
 }
 
 async function loadUserEquipment(userId: number): Promise<Set<string>> {
