@@ -19,15 +19,43 @@ export default function ShoppingListPage() {
   const clearChecked = useClearCheckedItems();
   const createIngredient = useCreateIngredient();
   const [editingQty, setEditingQty] = useState<Record<number, string>>({});
+  const [addingAll, setAddingAll] = useState(false);
 
+  const checkedItems = shoppingList.filter((i) => i.is_checked);
   const uncheckedCount = shoppingList.filter((i) => !i.is_checked).length;
-  const hasChecked = shoppingList.some((i) => i.is_checked);
+  const hasChecked = checkedItems.length > 0;
 
   function handleClearChecked() {
     clearChecked.mutate(undefined, {
       onSuccess: () => toast.success("已清除已購項目"),
       onError: () => toast.error("清除失敗"),
     });
+  }
+
+  async function handleAddAllCheckedToFridge() {
+    setAddingAll(true);
+    let successCount = 0;
+    await Promise.all(
+      checkedItems.map(async (item) => {
+        const qty = item.quantity != null ? parseFloat(item.quantity) : NaN;
+        try {
+          await createIngredient.mutateAsync({
+            name: item.ingredient_name,
+            quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
+            unit: item.unit ?? "pieces",
+            category: null,
+            status: "fresh",
+            expiry_date: null,
+          });
+          deleteItem.mutate(item.id);
+          successCount++;
+        } catch {
+          toast.error(`「${item.ingredient_name}」加入失敗`);
+        }
+      })
+    );
+    setAddingAll(false);
+    if (successCount > 0) toast.success(`已將 ${successCount} 項食材加入冰箱`);
   }
 
   return (
@@ -58,8 +86,20 @@ export default function ShoppingListPage() {
         </div>
 
         <p className="text-sm text-gray-500">
-          從食譜詳情頁加入的缺少食材。購買後勾選，再點「加入冰箱」補充庫存。
+          勾選表示已購買，回家後點「加入冰箱」補充庫存。
         </p>
+
+        {hasChecked && (
+          <button
+            onClick={() => void handleAddAllCheckedToFridge()}
+            disabled={addingAll}
+            className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          >
+            {addingAll
+              ? "加入中…"
+              : `將 ${checkedItems.length} 項已購食材加入冰箱`}
+          </button>
+        )}
 
         {shoppingList.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#E5E7EB] py-12 text-center">
@@ -127,8 +167,7 @@ export default function ShoppingListPage() {
                 </span>
                 <button
                   onClick={() => {
-                    const qty =
-                      item.quantity != null ? parseFloat(item.quantity) : NaN;
+                    const qty = item.quantity != null ? parseFloat(item.quantity) : NaN;
                     createIngredient.mutate(
                       {
                         name: item.ingredient_name,
@@ -148,10 +187,14 @@ export default function ShoppingListPage() {
                     );
                   }}
                   disabled={createIngredient.isPending}
-                  className="shrink-0 rounded border border-emerald-300 px-2 py-0.5 text-xs text-emerald-700 hover:bg-emerald-50 transition disabled:opacity-40"
+                  className={`shrink-0 rounded border px-2 py-0.5 text-xs transition disabled:opacity-40 ${
+                    item.is_checked
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-500 hover:bg-emerald-100"
+                      : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                  }`}
                   aria-label={`將 ${item.ingredient_name} 加入冰箱`}
                 >
-                  加入冰箱
+                  {item.is_checked ? "✓ 加入冰箱" : "加入冰箱"}
                 </button>
                 <button
                   onClick={() => deleteItem.mutate(item.id)}
