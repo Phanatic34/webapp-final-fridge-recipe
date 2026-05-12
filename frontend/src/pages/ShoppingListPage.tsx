@@ -93,7 +93,7 @@ export default function ShoppingListPage() {
         transition={{ type: "spring", stiffness: 160, damping: 20 }}
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-['Noto_Serif_TC'] text-xl font-bold text-[#1B2E22]">
+          <h2 className="font-['Noto_Serif_TC'] text-lg font-semibold text-[#1B2E22]">
             購物清單
             {uncheckedCount > 0 && (
               <span className="ml-2 inline-flex items-center justify-center rounded-full bg-amber-500 px-2 py-0.5 text-xs text-white">
