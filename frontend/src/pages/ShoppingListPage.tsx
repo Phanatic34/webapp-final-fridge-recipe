@@ -19,6 +19,7 @@ export default function ShoppingListPage() {
   const clearChecked = useClearCheckedItems();
   const createIngredient = useCreateIngredient();
   const [editingQty, setEditingQty] = useState<Record<number, string>>({});
+  const [expiryDates, setExpiryDates] = useState<Record<number, string>>({});
   const [addingAll, setAddingAll] = useState(false);
 
   const checkedItems = shoppingList.filter((i) => i.is_checked);
@@ -32,12 +33,36 @@ export default function ShoppingListPage() {
     });
   }
 
+  function addToFridge(item: (typeof shoppingList)[number]) {
+    const qty = item.quantity != null ? parseFloat(item.quantity) : NaN;
+    const expiry = expiryDates[item.id]?.trim() || null;
+    createIngredient.mutate(
+      {
+        name: item.ingredient_name,
+        quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
+        unit: item.unit ?? "pieces",
+        category: null,
+        status: "fresh",
+        expiry_date: expiry,
+      },
+      {
+        onSuccess: () => {
+          deleteItem.mutate(item.id);
+          setExpiryDates((prev) => { const n = { ...prev }; delete n[item.id]; return n; });
+          toast.success(`「${item.ingredient_name}」已加入冰箱`);
+        },
+        onError: () => toast.error("加入冰箱失敗"),
+      }
+    );
+  }
+
   async function handleAddAllCheckedToFridge() {
     setAddingAll(true);
     let successCount = 0;
     await Promise.all(
       checkedItems.map(async (item) => {
         const qty = item.quantity != null ? parseFloat(item.quantity) : NaN;
+        const expiry = expiryDates[item.id]?.trim() || null;
         try {
           await createIngredient.mutateAsync({
             name: item.ingredient_name,
@@ -45,9 +70,10 @@ export default function ShoppingListPage() {
             unit: item.unit ?? "pieces",
             category: null,
             status: "fresh",
-            expiry_date: null,
+            expiry_date: expiry,
           });
           deleteItem.mutate(item.id);
+          setExpiryDates((prev) => { const n = { ...prev }; delete n[item.id]; return n; });
           successCount++;
         } catch {
           toast.error(`「${item.ingredient_name}」加入失敗`);
@@ -86,7 +112,7 @@ export default function ShoppingListPage() {
         </div>
 
         <p className="text-sm text-gray-500">
-          勾選表示已購買，回家後點「加入冰箱」補充庫存。
+          勾選表示已購買，可在店內填入到期日，回家後點「加入冰箱」補充庫存。
         </p>
 
         {hasChecked && (
@@ -124,68 +150,68 @@ export default function ShoppingListPage() {
                   onChange={() =>
                     toggleItem.mutate({ id: item.id, is_checked: !item.is_checked })
                   }
-                  className="h-4 w-4 rounded border-gray-300 text-[#C4622D]"
+                  className="h-4 w-4 shrink-0 rounded border-gray-300 text-[#C4622D]"
                 />
-                <span
-                  className={`flex-1 text-sm ${
-                    item.is_checked ? "line-through text-gray-400" : "text-gray-800"
-                  }`}
-                >
-                  {item.ingredient_name}
-                  {item.quantity != null && (
-                    <span className="ml-1 inline-flex items-center gap-1 text-gray-400">
-                      ×
-                      <input
-                        type="number"
-                        min="0.01"
-                        step="any"
-                        value={editingQty[item.id] ?? item.quantity}
-                        onChange={(e) =>
-                          setEditingQty((prev) => ({ ...prev, [item.id]: e.target.value }))
-                        }
-                        onBlur={() => {
-                          const val = parseFloat(editingQty[item.id] ?? "");
-                          if (!Number.isNaN(val) && val > 0 && String(val) !== item.quantity) {
-                            updateQuantity.mutate(
-                              { id: item.id, quantity: val },
-                              { onError: () => toast.error("更新數量失敗") }
-                            );
+
+                {/* 兩行內容區 */}
+                <div className="flex flex-1 flex-col gap-1">
+                  {/* 第一行：名稱 + 數量 */}
+                  <span
+                    className={`text-sm ${
+                      item.is_checked ? "line-through text-gray-400" : "text-gray-800"
+                    }`}
+                  >
+                    {item.ingredient_name}
+                    {item.quantity != null && (
+                      <span className="ml-1 inline-flex items-center gap-1 text-gray-400">
+                        ×
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="any"
+                          value={editingQty[item.id] ?? item.quantity}
+                          onChange={(e) =>
+                            setEditingQty((prev) => ({ ...prev, [item.id]: e.target.value }))
                           }
-                          setEditingQty((prev) => { const n = { ...prev }; delete n[item.id]; return n; });
-                        }}
-                        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                        className="w-16 rounded border border-gray-200 bg-white px-1 py-0.5 text-center text-sm text-gray-700 focus:border-[#C4622D] focus:outline-none"
-                      />
-                      {item.unit ?? ""}
-                    </span>
-                  )}
-                  {item.source_recipe_title && (
-                    <span className="ml-2 text-xs text-gray-400">
-                      （來自《{item.source_recipe_title}》）
-                    </span>
-                  )}
-                </span>
-                <button
-                  onClick={() => {
-                    const qty = item.quantity != null ? parseFloat(item.quantity) : NaN;
-                    createIngredient.mutate(
-                      {
-                        name: item.ingredient_name,
-                        quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
-                        unit: item.unit ?? "pieces",
-                        category: null,
-                        status: "fresh",
-                        expiry_date: null,
-                      },
-                      {
-                        onSuccess: () => {
-                          deleteItem.mutate(item.id);
-                          toast.success(`「${item.ingredient_name}」已加入冰箱`);
-                        },
-                        onError: () => toast.error("加入冰箱失敗"),
+                          onBlur={() => {
+                            const val = parseFloat(editingQty[item.id] ?? "");
+                            if (!Number.isNaN(val) && val > 0 && String(val) !== item.quantity) {
+                              updateQuantity.mutate(
+                                { id: item.id, quantity: val },
+                                { onError: () => toast.error("更新數量失敗") }
+                              );
+                            }
+                            setEditingQty((prev) => { const n = { ...prev }; delete n[item.id]; return n; });
+                          }}
+                          onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                          className="w-16 rounded border border-gray-200 bg-white px-1 py-0.5 text-center text-sm text-gray-700 focus:border-[#C4622D] focus:outline-none"
+                        />
+                        {item.unit ?? ""}
+                      </span>
+                    )}
+                    {item.source_recipe_title && (
+                      <span className="ml-2 text-xs text-gray-400">
+                        （來自《{item.source_recipe_title}》）
+                      </span>
+                    )}
+                  </span>
+                  {/* 第二行：到期日 */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">到期日</span>
+                    <input
+                      type="date"
+                      value={expiryDates[item.id] ?? ""}
+                      onChange={(e) =>
+                        setExpiryDates((prev) => ({ ...prev, [item.id]: e.target.value }))
                       }
-                    );
-                  }}
+                      className="rounded border border-gray-200 bg-white px-2 py-0.5 text-xs text-gray-600 focus:border-[#C4622D] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 垂直置中的加入冰箱按鈕 */}
+                <button
+                  onClick={() => addToFridge(item)}
                   disabled={createIngredient.isPending}
                   className={`shrink-0 rounded border px-2 py-0.5 text-xs transition disabled:opacity-40 ${
                     item.is_checked
@@ -198,11 +224,12 @@ export default function ShoppingListPage() {
                 </button>
                 <button
                   onClick={() => deleteItem.mutate(item.id)}
-                  className="text-gray-300 hover:text-red-400 transition"
+                  className="shrink-0 text-gray-300 hover:text-red-400 transition"
                   aria-label="刪除"
                 >
                   ✕
                 </button>
+
               </li>
             ))}
           </ul>
