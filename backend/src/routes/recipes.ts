@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import { pool } from "../db/pool.js";
 import { computeExpiryMeta } from "../utils/expiry.js";
+import { generateAiExplanation } from "../utils/llmExplanation.js";
 import type {
   RecipeRow,
   RecipeIngredientRow,
@@ -207,6 +208,7 @@ function scoreRecipe(
     near_expiry_ingredient_count: nearExpiryUsed.length,
     near_expiry_ingredients: nearExpiryUsed,
     explanation,
+    ai_explanation: "",
   };
 }
 
@@ -278,7 +280,27 @@ router.get("/recommended", async (req: Request, res: Response) => {
       return a.recipe.id - b.recipe.id;
     });
 
-    res.json({ recommendations: scored });
+    const withAiExplanations = await Promise.all(
+      scored.map(async (item) => {
+        try {
+          const ai_explanation = await generateAiExplanation({
+            recipeName: item.recipe.title,
+            matchRatio: item.match_ratio,
+            matchCount: item.match_count,
+            totalIngredients: item.total_ingredients,
+            matchedIngredients: item.matched_ingredients,
+            missingIngredients: item.missing_ingredients,
+            nearExpiryIngredients: item.near_expiry_ingredients,
+          });
+          return { ...item, ai_explanation };
+        } catch (err) {
+          console.error("[AI explanation error]", err);
+          return { ...item, ai_explanation: "" };
+        }
+      })
+    );
+
+    res.json({ recommendations: withAiExplanations });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Failed to compute recommendations" });

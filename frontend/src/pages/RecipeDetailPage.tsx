@@ -178,6 +178,16 @@ export default function RecipeDetailPage() {
                   )}
                 </div>
 
+                {recommendation.ai_explanation && (
+                  <div
+                    className="rounded-xl px-4 py-3"
+                    style={{ background: "rgba(5,150,105,0.07)", border: "1px solid rgba(5,150,105,0.15)" }}
+                  >
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#059669]">🤖 AI 推薦理由</p>
+                    <p className="text-sm text-[#1B2E22] leading-relaxed">{recommendation.ai_explanation}</p>
+                  </div>
+                )}
+
                 <ul className="space-y-1">
                   {recommendation.explanation.map((line, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-[#6B7280]">
