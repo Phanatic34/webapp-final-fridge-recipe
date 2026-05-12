@@ -76,11 +76,14 @@ export function Layout({
           {/* Mobile: hamburger button */}
           <button
             type="button"
-            className="sm:hidden rounded p-1.5 text-white/70 hover:text-white transition"
+            className="relative sm:hidden rounded p-1.5 text-white/70 hover:text-white transition"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? "關閉選單" : "開啟選單"}
             aria-expanded={menuOpen}
           >
+            {uncheckedCount > 0 && !menuOpen && (
+              <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-amber-500" />
+            )}
             <AnimatePresence mode="wait" initial={false}>
               {menuOpen ? (
                 <motion.span
