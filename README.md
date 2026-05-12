@@ -1,4 +1,3 @@
-````md
 # 冰箱食譜推薦 — MVP
 
 A full-stack web application for managing fridge ingredients and finding useful recipes based on what is currently available. The UI is in Traditional Chinese (繁體中文).
@@ -72,7 +71,7 @@ project-root/
 │     └─ types/
 ├─ docker-compose.yml
 └─ README.md
-````
+```
 
 ---
 
@@ -343,5 +342,3 @@ The Docker container is mapped to port 5433 to avoid conflicts with any native P
 * user-created and editable recipes
 * reduce ingredient quantity after cooking a recipe
 
-```
-```
