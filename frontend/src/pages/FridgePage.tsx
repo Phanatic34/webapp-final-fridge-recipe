@@ -145,44 +145,46 @@ export default function FridgePage() {
       >
         <div className="space-y-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="sort"
-                className="text-xs font-medium uppercase text-[#6B7280]"
-              >
-                排序
-              </label>
-              <select
-                id="sort"
-                value={sort}
-                onChange={(e) => setSort(e.target.value as SortOption)}
-                className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
-              >
-                <option value="created_at">新增日期</option>
-                <option value="name">名稱</option>
-                <option value="expiry_date">到期日</option>
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="category"
-                className="text-xs font-medium uppercase text-[#6B7280]"
-              >
-                分類
-              </label>
-              <select
-                id="category"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
-              >
-                <option value="all">所有分類</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {CATEGORY_LABELS[c] ?? c}
-                  </option>
-                ))}
-              </select>
+            <div className="flex gap-3 sm:contents">
+              <div className="flex flex-1 flex-col gap-1 sm:flex-none">
+                <label
+                  htmlFor="sort"
+                  className="text-xs font-medium uppercase text-[#6B7280]"
+                >
+                  排序
+                </label>
+                <select
+                  id="sort"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as SortOption)}
+                  className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+                >
+                  <option value="created_at">新增日期</option>
+                  <option value="name">名稱</option>
+                  <option value="expiry_date">到期日</option>
+                </select>
+              </div>
+              <div className="flex flex-1 flex-col gap-1 sm:flex-none">
+                <label
+                  htmlFor="category"
+                  className="text-xs font-medium uppercase text-[#6B7280]"
+                >
+                  分類
+                </label>
+                <select
+                  id="category"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+                >
+                  <option value="all">所有分類</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {CATEGORY_LABELS[c] ?? c}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="flex flex-col gap-1 sm:flex-1">
               <label
