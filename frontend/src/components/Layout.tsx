@@ -45,7 +45,7 @@ export function Layout({
           WebkitBackdropFilter: "blur(20px)",
         }}
       >
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:min-h-[64px] sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-['Noto_Serif_TC'] text-xl font-bold tracking-tight text-white">
               冰箱食譜推薦
@@ -62,7 +62,7 @@ export function Layout({
               <button
                 type="button"
                 onClick={onAddClick}
-                className="rounded-lg bg-[#C4622D] px-4 py-2 text-sm font-medium text-white shadow-lg shadow-[#C4622D]/30 hover:bg-[#b3561f] transition focus:outline-none focus:ring-2 focus:ring-[#C4622D] focus:ring-offset-2 focus:ring-offset-[#1B2E22]"
+                className="rounded-lg bg-[#C4622D] px-4 py-1.5 text-sm font-medium text-white shadow-lg shadow-[#C4622D]/30 hover:bg-[#b3561f] transition focus:outline-none focus:ring-2 focus:ring-[#C4622D] focus:ring-offset-2 focus:ring-offset-[#1B2E22]"
               >
                 新增食材
               </button>
