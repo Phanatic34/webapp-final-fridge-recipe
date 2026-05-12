@@ -120,7 +120,7 @@ export default function ShoppingListPage() {
           <button
             onClick={() => void handleAddAllCheckedToFridge()}
             disabled={addingAll}
-            className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+            className="hidden sm:block w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
           >
             {addingAll
               ? "加入中…"
@@ -347,6 +347,27 @@ export default function ShoppingListPage() {
           </ul>
         )}
       </motion.div>
+
+      {/* 手機版批次加入冰箱 FAB */}
+      <AnimatePresence>
+        {hasChecked && (
+          <motion.button
+            type="button"
+            onClick={() => void handleAddAllCheckedToFridge()}
+            disabled={addingAll}
+            className="fixed bottom-6 right-6 z-40 sm:hidden flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/40 hover:bg-emerald-700 transition-colors disabled:opacity-50 focus:outline-none"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1, transition: { type: "spring", stiffness: 260, damping: 20 } }}
+            exit={{ scale: 0, opacity: 0, transition: { duration: 0.2 } }}
+            aria-label="將已購食材加入冰箱"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            {addingAll ? "加入中…" : `加入冰箱 (${checkedItems.length})`}
+          </motion.button>
+        )}
+      </AnimatePresence>
     </Layout>
   );
 }
