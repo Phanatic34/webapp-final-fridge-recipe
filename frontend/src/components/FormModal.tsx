@@ -50,23 +50,18 @@ export function FormModal({ open, title, children, onClose, fabOrigin }: Props) 
           animate="show"
           exit="exit"
         >
-          {/* 毛玻璃遮罩 */}
           <motion.button
             type="button"
             className="absolute inset-0"
-            style={{ background: "rgba(15,25,18,0.45)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+            style={{ background: "rgba(15,23,42,0.35)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
             onClick={onClose}
             aria-label="關閉"
           />
 
           {/* Panel */}
           <motion.div
-            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl p-6 shadow-glass-hover"
+            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-app-border bg-white p-6 shadow-soft-hover"
             style={{
-              background: "rgba(255,255,255,0.82)",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
-              border: "1px solid rgba(255,255,255,0.85)",
               ...(fromFab ? { transformOrigin: "bottom right" } : {}),
             }}
             variants={fromFab ? fabPanelVariants : panelVariants}
@@ -75,13 +70,13 @@ export function FormModal({ open, title, children, onClose, fabOrigin }: Props) 
             exit="exit"
           >
             <div className="mb-4 flex items-start justify-between gap-2">
-              <h2 id="form-modal-title" className="font-['Noto_Serif_TC'] text-lg font-semibold text-[#1B2E22]">
+              <h2 id="form-modal-title" className="font-['Noto_Serif_TC'] text-lg font-semibold text-app-text">
                 {title}
               </h2>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100/70 hover:text-slate-700 transition"
+                className="rounded-lg p-1.5 text-app-muted transition hover:bg-app-surface hover:text-app-text"
                 aria-label="關閉"
               >
                 ✕

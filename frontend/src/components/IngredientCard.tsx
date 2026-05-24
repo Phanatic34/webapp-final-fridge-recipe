@@ -12,13 +12,13 @@ type Props = {
 function CategoryBadge({ category }: { category: string | null }) {
   if (!category) {
     return (
-      <span className="rounded bg-white/60 px-2 py-0.5 text-xs text-slate-500">
+      <span className="rounded bg-app-surface px-2 py-0.5 text-xs text-app-muted">
         未分類
       </span>
     );
   }
   return (
-    <span className="rounded bg-[#1B2E22]/10 px-2 py-0.5 text-xs font-medium text-[#1B2E22]">
+    <span className="rounded bg-app-surface px-2 py-0.5 text-xs font-medium text-app-muted">
       {CATEGORY_LABELS[category] ?? category}
     </span>
   );
@@ -26,35 +26,32 @@ function CategoryBadge({ category }: { category: string | null }) {
 
 function StatusTag({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    fresh:  "bg-emerald-50/80 text-emerald-800 ring-emerald-200",
-    opened: "bg-blue-50/80 text-blue-800 ring-blue-200",
-    frozen: "bg-cyan-50/80 text-cyan-800 ring-cyan-200",
+    fresh:  "bg-emerald-50 text-app-success ring-emerald-100",
+    opened: "bg-app-surface text-app-muted ring-app-border",
+    frozen: "bg-app-surface text-app-muted ring-app-border",
   };
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${styles[status] ?? "bg-white/60 text-slate-700 ring-slate-200"}`}>
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${styles[status] ?? "bg-app-surface text-app-muted ring-app-border"}`}>
       {STATUS_LABELS[status] ?? status}
     </span>
   );
 }
 
-const glassBase =
-  "backdrop-blur-xl border border-white/70 shadow-glass";
+function formatQuantity(ingredient: Ingredient) {
+  const count =
+    ingredient.count_quantity != null && ingredient.count_unit
+      ? `${ingredient.count_quantity} ${ingredient.count_unit}`
+      : null;
+  const measure =
+    ingredient.measure_quantity != null && ingredient.measure_unit
+      ? `${ingredient.measure_quantity} ${ingredient.measure_unit}`
+      : null;
+
+  if (count && measure) return `${count}，約 ${measure}`;
+  return count ?? measure ?? "未填數量";
+}
 
 export function IngredientCard({ ingredient, onEdit, onDelete }: Props) {
-  const highlight =
-    ingredient.is_expired
-      ? "ring-2 ring-red-300/60"
-      : ingredient.is_near_expiry
-        ? "ring-2 ring-amber-300/60"
-        : "";
-
-  const bg =
-    ingredient.is_expired
-      ? "rgba(255,245,245,0.60)"
-      : ingredient.is_near_expiry
-        ? "rgba(255,251,235,0.60)"
-        : "rgba(255,255,255,0.52)";
-
   const expiryLabel = ingredient.expiry_date
     ? new Date(ingredient.expiry_date + "T12:00:00Z").toLocaleDateString("zh-TW", {
         year: "numeric", month: "short", day: "numeric",
@@ -63,21 +60,20 @@ export function IngredientCard({ ingredient, onEdit, onDelete }: Props) {
 
   return (
     <motion.article
-      className={`flex flex-col rounded-2xl p-4 ${glassBase} ${highlight}`}
-      style={{ background: bg, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      whileHover={{ y: -4, boxShadow: "0 8px 32px rgba(0,0,0,0.11), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+      className="flex flex-col rounded-xl border border-app-border bg-app-card p-4 shadow-sm"
+      whileHover={{ y: -3, boxShadow: "0 2px 4px rgba(23,42,33,0.06), 0 12px 32px rgba(23,42,33,0.08)" }}
       transition={{ type: "spring", stiffness: 180, damping: 18 }}
     >
       <div className="flex flex-1 flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-semibold leading-tight text-[#1B2E22]">
+          <h3 className="text-lg font-semibold leading-tight text-app-text">
             {ingredient.name}
           </h3>
           <CategoryBadge category={ingredient.category} />
         </div>
-        <p className="text-sm text-[#6B7280]">
-          <span className="font-medium text-[#1B2E22]">
-            {ingredient.quantity} {ingredient.unit}
+        <p className="text-sm text-app-muted">
+          <span className="font-medium text-app-text">
+            {formatQuantity(ingredient)}
           </span>
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -85,23 +81,23 @@ export function IngredientCard({ ingredient, onEdit, onDelete }: Props) {
           <ExpiryBadge ingredient={ingredient} />
         </div>
         {expiryLabel && (
-          <p className="text-xs text-[#6B7280]">
-            到期：<span className="text-[#1B2E22]">{expiryLabel}</span>
+          <p className="text-xs text-app-muted">
+            到期：<span className="text-app-text">{expiryLabel}</span>
           </p>
         )}
       </div>
-      <div className="mt-4 flex gap-2 border-t border-white/40 pt-3">
+      <div className="mt-4 flex gap-2 border-t border-app-border pt-3">
         <button
           type="button"
           onClick={() => onEdit(ingredient)}
-          className="flex-1 rounded-lg border border-white/60 bg-white/40 py-2 text-sm font-medium text-[#1B2E22] hover:bg-white/70 transition"
+          className="flex-1 rounded-lg border border-app-border bg-white py-2 text-sm font-medium text-app-text transition hover:bg-app-surface"
         >
           編輯
         </button>
         <button
           type="button"
           onClick={() => onDelete(ingredient)}
-          className="flex-1 rounded-lg border border-red-200/60 bg-red-50/40 py-2 text-sm font-medium text-red-700 hover:bg-red-50/70 transition"
+          className="flex-1 rounded-lg border border-red-100 bg-white py-2 text-sm font-medium text-app-danger transition hover:bg-red-50"
         >
           刪除
         </button>

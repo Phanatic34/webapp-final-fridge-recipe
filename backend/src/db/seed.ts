@@ -269,16 +269,19 @@ async function seed() {
   await pool.query(`DELETE FROM ingredients WHERE user_id = 1`);
 
   await pool.query(
-    `INSERT INTO ingredients (user_id, name, quantity, unit, category, status, expiry_date)
+    `INSERT INTO ingredients (
+       user_id, name, count_quantity, count_unit, measure_quantity, measure_unit,
+       category, status, expiry_date
+     )
      VALUES
-       (1, 'Milk',    1,   'L',      'dairy',     'opened', CURRENT_DATE + 2),
-       (1, 'Eggs',    12,  'pieces', 'dairy',     'fresh',  CURRENT_DATE + 10),
-       (1, 'Spinach', 200, 'g',      'vegetable', 'fresh',  CURRENT_DATE - 1),
-       (1, 'Rice',    500, 'g',      'grain',     'fresh',  NULL),
-       (1, 'Soy Sauce', 1, 'packs',  'condiment', 'opened', CURRENT_DATE + 90),
-       (1, 'Garlic',  5,   'pieces', 'vegetable', 'fresh',  CURRENT_DATE + 14),
-       (1, 'Butter',  100, 'g',      'dairy',     'fresh',  CURRENT_DATE + 30),
-       (1, 'Tomatoes', 3,  'pieces', 'vegetable', 'fresh',  CURRENT_DATE + 3)`
+       (1, 'Milk',      NULL, NULL, 1,   'L',  'dairy',     'opened', CURRENT_DATE + 2),
+       (1, 'Eggs',      12,   '顆', NULL, NULL, 'dairy',     'fresh',  CURRENT_DATE + 10),
+       (1, 'Spinach',   NULL, NULL, 200, 'g',  'vegetable', 'fresh',  CURRENT_DATE - 1),
+       (1, 'Rice',      NULL, NULL, 500, 'g',  'grain',     'fresh',  NULL),
+       (1, 'Soy Sauce', 1,    '包', NULL, NULL, 'condiment', 'opened', CURRENT_DATE + 90),
+       (1, 'Garlic',    5,    '顆', NULL, NULL, 'vegetable', 'fresh',  CURRENT_DATE + 14),
+       (1, 'Butter',    NULL, NULL, 100, 'g',  'dairy',     'fresh',  CURRENT_DATE + 30),
+       (1, 'Tomatoes',  3,    '顆', NULL, NULL, 'vegetable', 'fresh',  CURRENT_DATE + 3)`
   );
 
   /* ---- recipes ---- */

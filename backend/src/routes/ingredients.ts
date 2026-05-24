@@ -36,15 +36,16 @@ function normalizeExpiryDate(value: unknown): string | null {
 }
 
 function rowToResponse(row: IngredientRow): IngredientResponse {
-  const qty = Number.parseFloat(row.quantity);
   const expiryDate = normalizeExpiryDate(row.expiry_date);
   const meta = computeExpiryMeta(expiryDate);
   return {
     id: row.id,
     user_id: row.user_id,
     name: row.name,
-    quantity: Number.isFinite(qty) ? qty : 0,
-    unit: row.unit,
+    count_quantity: parseNullableNumber(row.count_quantity),
+    count_unit: row.count_unit,
+    measure_quantity: parseNullableNumber(row.measure_quantity),
+    measure_unit: row.measure_unit,
     category: row.category,
     status: row.status,
     expiry_date: expiryDate,
@@ -54,6 +55,41 @@ function rowToResponse(row: IngredientRow): IngredientResponse {
     is_expired: meta.is_expired,
     days_until_expiry: meta.days_until_expiry,
   };
+}
+
+function parseNullableNumber(value: string | null): number | null {
+  if (value === null) return null;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function validateStoredQuantities(input: {
+  count_quantity: number | null;
+  count_unit: string | null;
+  measure_quantity: number | null;
+  measure_unit: string | null;
+}): string | null {
+  const hasCountQuantity = input.count_quantity != null;
+  const hasCountUnit = input.count_unit != null;
+  const hasMeasureQuantity = input.measure_quantity != null;
+  const hasMeasureUnit = input.measure_unit != null;
+
+  if (!hasCountQuantity && !hasMeasureQuantity) {
+    return "Provide either count quantity or measurement quantity";
+  }
+  if (hasCountQuantity && !hasCountUnit) {
+    return "count_unit is required when count_quantity is provided";
+  }
+  if (!hasCountQuantity && hasCountUnit) {
+    return "count_quantity is required when count_unit is provided";
+  }
+  if (hasMeasureQuantity && !hasMeasureUnit) {
+    return "measure_unit is required when measure_quantity is provided";
+  }
+  if (!hasMeasureQuantity && hasMeasureUnit) {
+    return "measure_quantity is required when measure_unit is provided";
+  }
+  return null;
 }
 
 /** GET /api/ingredients?sort=&category= */
@@ -117,8 +153,10 @@ router.post(
   async (req: Request, res: Response) => {
     const body = req.body as {
       name: string;
-      quantity: number;
-      unit: string;
+      count_quantity?: number | null;
+      count_unit?: string | null;
+      measure_quantity?: number | null;
+      measure_unit?: string | null;
       category?: string | null;
       status?: string;
       expiry_date?: string | null;
@@ -129,17 +167,33 @@ router.post(
         : null;
     const status = body.status ?? "fresh";
     const category = body.category ?? null;
+    const quantities = {
+      count_quantity: body.count_quantity ?? null,
+      count_unit: body.count_unit ?? null,
+      measure_quantity: body.measure_quantity ?? null,
+      measure_unit: body.measure_unit ?? null,
+    };
+    const quantityError = validateStoredQuantities(quantities);
+    if (quantityError) {
+      res.status(400).json({ error: quantityError });
+      return;
+    }
 
     try {
       const result = await pool.query<IngredientRow>(
-        `INSERT INTO ingredients (user_id, name, quantity, unit, category, status, expiry_date)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO ingredients (
+          user_id, name, count_quantity, count_unit, measure_quantity, measure_unit,
+          category, status, expiry_date
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
           DEFAULT_USER_ID,
           body.name,
-          body.quantity,
-          body.unit,
+          quantities.count_quantity,
+          quantities.count_unit,
+          quantities.measure_quantity,
+          quantities.measure_unit,
           category,
           status,
           expiry,
@@ -166,8 +220,10 @@ router.put(
 
     const body = req.body as Partial<{
       name: string;
-      quantity: number;
-      unit: string;
+      count_quantity: number | null;
+      count_unit: string | null;
+      measure_quantity: number | null;
+      measure_unit: string | null;
       category: string | null;
       status: string;
       expiry_date: string | null;
@@ -185,9 +241,18 @@ router.put(
       const cur = existing.rows[0];
 
       const name = body.name ?? cur.name;
-      const quantity =
-        body.quantity !== undefined ? body.quantity : Number.parseFloat(cur.quantity);
-      const unit = body.unit ?? cur.unit;
+      const count_quantity =
+        body.count_quantity !== undefined
+          ? body.count_quantity
+          : parseNullableNumber(cur.count_quantity);
+      const count_unit =
+        body.count_unit !== undefined ? body.count_unit : cur.count_unit;
+      const measure_quantity =
+        body.measure_quantity !== undefined
+          ? body.measure_quantity
+          : parseNullableNumber(cur.measure_quantity);
+      const measure_unit =
+        body.measure_unit !== undefined ? body.measure_unit : cur.measure_unit;
       const category =
         body.category !== undefined ? body.category : cur.category;
       const status = body.status ?? cur.status;
@@ -199,18 +264,42 @@ router.put(
             : null
           : normalizeExpiryDate(cur.expiry_date);
 
-      if (quantity <= 0) {
-        res.status(400).json({ error: "Quantity must be greater than 0" });
+      const quantityError = validateStoredQuantities({
+        count_quantity,
+        count_unit,
+        measure_quantity,
+        measure_unit,
+      });
+      if (quantityError) {
+        res.status(400).json({ error: quantityError });
         return;
       }
 
       const result = await pool.query<IngredientRow>(
         `UPDATE ingredients SET
-          name = $1, quantity = $2, unit = $3, category = $4, status = $5, expiry_date = $6,
+          name = $1,
+          count_quantity = $2,
+          count_unit = $3,
+          measure_quantity = $4,
+          measure_unit = $5,
+          category = $6,
+          status = $7,
+          expiry_date = $8,
           updated_at = NOW()
-         WHERE id = $7 AND user_id = $8
+         WHERE id = $9 AND user_id = $10
          RETURNING *`,
-        [name, quantity, unit, category, status, expiry, id, DEFAULT_USER_ID]
+        [
+          name,
+          count_quantity,
+          count_unit,
+          measure_quantity,
+          measure_unit,
+          category,
+          status,
+          expiry,
+          id,
+          DEFAULT_USER_ID,
+        ]
       );
 
       res.json({ ingredient: rowToResponse(result.rows[0]) });

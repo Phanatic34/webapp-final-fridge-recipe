@@ -3,9 +3,26 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      colors: {
+        app: {
+          bg: "#F6F8F3",
+          card: "#FFFFFF",
+          text: "#172A21",
+          muted: "#647067",
+          border: "#DDE5DA",
+          primary: "#3F6B57",
+          "primary-hover": "#345A49",
+          surface: "#EEF5EC",
+          success: "#059669",
+          warning: "#D97706",
+          danger: "#DC2626",
+        },
+      },
       boxShadow: {
-        glass: "0 4px 16px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.85)",
-        "glass-hover": "0 8px 32px rgba(0,0,0,0.11), inset 0 1px 0 rgba(255,255,255,0.9)",
+        soft: "0 1px 2px rgba(23,42,33,0.04), 0 8px 24px rgba(23,42,33,0.06)",
+        "soft-hover": "0 2px 4px rgba(23,42,33,0.06), 0 12px 32px rgba(23,42,33,0.08)",
+        glass: "0 1px 2px rgba(23,42,33,0.04), 0 8px 24px rgba(23,42,33,0.06)",
+        "glass-hover": "0 2px 4px rgba(23,42,33,0.06), 0 12px 32px rgba(23,42,33,0.08)",
       },
       keyframes: {
         shimmer: {

@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ingredientFormSchema,
   type IngredientFormValues,
-  UNITS,
+  COUNT_UNITS,
+  MEASURE_UNITS,
   CATEGORIES,
   STATUSES,
   type Ingredient,
@@ -21,8 +22,10 @@ type Props = {
 
 const defaultValues: IngredientFormValues = {
   name: "",
-  quantity: 1,
-  unit: "g",
+  count_quantity: null,
+  count_unit: null,
+  measure_quantity: null,
+  measure_unit: null,
   category: "",
   status: "fresh",
   expiry_date: "",
@@ -31,8 +34,10 @@ const defaultValues: IngredientFormValues = {
 function ingredientToFormValues(ing: Ingredient): IngredientFormValues {
   return {
     name: ing.name,
-    quantity: ing.quantity,
-    unit: ing.unit as IngredientFormValues["unit"],
+    count_quantity: ing.count_quantity,
+    count_unit: ing.count_unit as IngredientFormValues["count_unit"],
+    measure_quantity: ing.measure_quantity,
+    measure_unit: ing.measure_unit as IngredientFormValues["measure_unit"],
     category: (ing.category ?? "") as IngredientFormValues["category"],
     status: ing.status as IngredientFormValues["status"],
     expiry_date: ing.expiry_date ?? "",
@@ -66,74 +71,148 @@ export function IngredientForm({
       noValidate
     >
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-[#1B2E22]">
+        <label htmlFor="name" className="block text-sm font-medium text-app-text">
           名稱
         </label>
         <input
           id="name"
           type="text"
           autoComplete="off"
-          className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+          className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
           {...form.register("name")}
         />
         {form.formState.errors.name && (
-          <p className="mt-1 text-xs text-red-600">
+          <p className="mt-1 text-xs text-app-danger">
             {form.formState.errors.name.message}
           </p>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label
-            htmlFor="quantity"
-            className="block text-sm font-medium text-[#1B2E22]"
-          >
-            數量
-          </label>
-          <input
-            id="quantity"
-            type="number"
-            step="any"
-            min="0"
-            className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
-            {...form.register("quantity", { valueAsNumber: true })}
-          />
-          {form.formState.errors.quantity && (
-            <p className="mt-1 text-xs text-red-600">
-              {form.formState.errors.quantity.message}
-            </p>
-          )}
+      <section className="rounded-xl border border-app-border bg-app-surface/70 p-3">
+        <h3 className="text-sm font-semibold text-app-text">個數</h3>
+        <p className="mt-0.5 text-xs text-app-muted">
+          例如：5 根小黃瓜、3 顆番茄、2 包豆腐
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <label
+              htmlFor="count_quantity"
+              className="block text-sm font-medium text-app-text"
+            >
+              數量
+            </label>
+            <input
+              id="count_quantity"
+              type="number"
+              step="any"
+              min="0"
+              className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              {...form.register("count_quantity", {
+                setValueAs: (value) => (value === "" ? null : Number(value)),
+              })}
+            />
+            {form.formState.errors.count_quantity && (
+              <p className="mt-1 text-xs text-app-danger">
+                {form.formState.errors.count_quantity.message}
+              </p>
+            )}
+          </div>
+          <div>
+            <label
+              htmlFor="count_unit"
+              className="block text-sm font-medium text-app-text"
+            >
+              單位
+            </label>
+            <select
+              id="count_unit"
+              className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              {...form.register("count_unit")}
+            >
+              <option value="">—</option>
+              {COUNT_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+            {form.formState.errors.count_unit && (
+              <p className="mt-1 text-xs text-app-danger">
+                {form.formState.errors.count_unit.message}
+              </p>
+            )}
+          </div>
         </div>
-        <div>
-          <label htmlFor="unit" className="block text-sm font-medium text-[#1B2E22]">
-            單位
-          </label>
-          <select
-            id="unit"
-            className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
-            {...form.register("unit")}
-          >
-            {UNITS.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </select>
+      </section>
+
+      <section className="rounded-xl border border-app-border bg-app-surface/70 p-3">
+        <h3 className="text-sm font-semibold text-app-text">重量／容量</h3>
+        <p className="mt-0.5 text-xs text-app-muted">
+          例如：100 g、1 kg、500 ml、1 L
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <label
+              htmlFor="measure_quantity"
+              className="block text-sm font-medium text-app-text"
+            >
+              數值
+            </label>
+            <input
+              id="measure_quantity"
+              type="number"
+              step="any"
+              min="0"
+              className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              {...form.register("measure_quantity", {
+                setValueAs: (value) => (value === "" ? null : Number(value)),
+              })}
+            />
+            {form.formState.errors.measure_quantity && (
+              <p className="mt-1 text-xs text-app-danger">
+                {form.formState.errors.measure_quantity.message}
+              </p>
+            )}
+          </div>
+          <div>
+            <label
+              htmlFor="measure_unit"
+              className="block text-sm font-medium text-app-text"
+            >
+              單位
+            </label>
+            <select
+              id="measure_unit"
+              className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              {...form.register("measure_unit")}
+            >
+              <option value="">—</option>
+              {MEASURE_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+            {form.formState.errors.measure_unit && (
+              <p className="mt-1 text-xs text-app-danger">
+                {form.formState.errors.measure_unit.message}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label
             htmlFor="category"
-            className="block text-sm font-medium text-[#1B2E22]"
+            className="block text-sm font-medium text-app-text"
           >
             分類
           </label>
           <select
             id="category"
-            className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+            className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
             {...form.register("category")}
           >
             <option value="">—</option>
@@ -147,13 +226,13 @@ export function IngredientForm({
         <div>
           <label
             htmlFor="status"
-            className="block text-sm font-medium text-[#1B2E22]"
+            className="block text-sm font-medium text-app-text"
           >
             狀態
           </label>
           <select
             id="status"
-            className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+            className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
             {...form.register("status")}
           >
             {STATUSES.map((s) => (
@@ -168,17 +247,17 @@ export function IngredientForm({
       <div>
         <label
           htmlFor="expiry_date"
-          className="block text-sm font-medium text-[#1B2E22]"
+          className="block text-sm font-medium text-app-text"
         >
           到期日（選填）
         </label>
         <input
           id="expiry_date"
           type="date"
-          className="mt-1 w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+          className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
           {...form.register("expiry_date")}
         />
-        <p className="mt-1 text-xs text-[#6B7280]">
+        <p className="mt-1 text-xs text-app-muted">
           3 天內到期的食材會標示為即將到期。
         </p>
       </div>
@@ -187,14 +266,14 @@ export function IngredientForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-[#E5E7EB] px-4 py-2 text-sm font-medium text-[#1B2E22] hover:bg-slate-50"
+          className="rounded-lg border border-app-border px-4 py-2 text-sm font-medium text-app-text hover:bg-app-surface"
         >
           取消
         </button>
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-[#C4622D] px-4 py-2 text-sm font-medium text-white hover:bg-[#b3561f] disabled:opacity-50"
+          className="rounded-lg bg-app-primary px-4 py-2 text-sm font-medium text-white hover:bg-app-primary-hover disabled:opacity-50"
         >
           {submitting
             ? "儲存中…"

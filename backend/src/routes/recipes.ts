@@ -53,6 +53,9 @@ type FridgeItem = {
  * plus a Set of those that are near-expiry.
  */
 async function loadFridge(userId: number) {
+  // TODO: Recommendation matching currently checks ingredient names only.
+  // Future scoring should compare required recipe quantities against available
+  // count_quantity/measure_quantity with unit conversion where safe.
   const { rows } = await pool.query<{
     name: string;
     expiry_date: string | Date | null;

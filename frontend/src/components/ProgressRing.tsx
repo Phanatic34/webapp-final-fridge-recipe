@@ -10,9 +10,9 @@ export function ProgressRing({ ratio, size = 48, strokeWidth = 4 }: Props) {
   const offset = circumference * (1 - Math.min(Math.max(ratio, 0), 1));
 
   const color =
-    ratio >= 1    ? "#10B981"  // 全匹配 — 綠
-    : ratio >= 0.6 ? "#F59E0B"  // 大部分 — 琥珀
-    :               "#C4622D"; // 較少   — 橘
+    ratio >= 1    ? "#059669"
+    : ratio >= 0.6 ? "#D97706"
+    :               "#3F6B57";
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
@@ -28,7 +28,7 @@ export function ProgressRing({ ratio, size = 48, strokeWidth = 4 }: Props) {
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="rgba(0,0,0,0.06)"
+          stroke="#DDE5DA"
           strokeWidth={strokeWidth}
         />
         {/* fill */}
@@ -47,7 +47,7 @@ export function ProgressRing({ ratio, size = 48, strokeWidth = 4 }: Props) {
       </svg>
       <span
         className="absolute text-xs font-bold"
-        style={{ color: "#1B2E22" }}
+        style={{ color: "#172A21" }}
       >
         {Math.round(ratio * 100)}%
       </span>

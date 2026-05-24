@@ -30,8 +30,10 @@ export async function fetchIngredient(id: number): Promise<Ingredient> {
 
 export type CreatePayload = {
   name: string;
-  quantity: number;
-  unit: string;
+  count_quantity?: number | null;
+  count_unit?: string | null;
+  measure_quantity?: number | null;
+  measure_unit?: string | null;
   category?: string | null;
   status?: string;
   expiry_date?: string | null;

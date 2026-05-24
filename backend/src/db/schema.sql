@@ -3,14 +3,89 @@ CREATE TABLE IF NOT EXISTS ingredients (
   id            SERIAL PRIMARY KEY,
   user_id       INTEGER NOT NULL DEFAULT 1,
   name          VARCHAR(255) NOT NULL,
-  quantity      DECIMAL(10, 2) NOT NULL,
-  unit          VARCHAR(50) NOT NULL,
+  count_quantity   DECIMAL(10, 2),
+  count_unit       VARCHAR(50),
+  measure_quantity DECIMAL(10, 2),
+  measure_unit     VARCHAR(50),
   category      VARCHAR(100),
   status        VARCHAR(50) NOT NULL DEFAULT 'fresh',
   expiry_date   DATE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT ingredients_count_positive
+    CHECK (count_quantity IS NULL OR count_quantity > 0),
+  CONSTRAINT ingredients_measure_positive
+    CHECK (measure_quantity IS NULL OR measure_quantity > 0),
+  CONSTRAINT ingredients_count_pair
+    CHECK ((count_quantity IS NULL AND count_unit IS NULL) OR (count_quantity IS NOT NULL AND count_unit IS NOT NULL)),
+  CONSTRAINT ingredients_measure_pair
+    CHECK ((measure_quantity IS NULL AND measure_unit IS NULL) OR (measure_quantity IS NOT NULL AND measure_unit IS NOT NULL)),
+  CONSTRAINT ingredients_has_quantity
+    CHECK (count_quantity IS NOT NULL OR measure_quantity IS NOT NULL)
 );
+
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS count_quantity DECIMAL(10, 2);
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS count_unit VARCHAR(50);
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS measure_quantity DECIMAL(10, 2);
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS measure_unit VARCHAR(50);
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'ingredients' AND column_name = 'quantity'
+  ) THEN
+    EXECUTE $sql$
+      UPDATE ingredients
+      SET measure_quantity = quantity,
+          measure_unit = unit
+      WHERE unit IN ('g', 'kg', 'ml', 'L')
+        AND measure_quantity IS NULL
+        AND quantity IS NOT NULL
+    $sql$;
+
+    EXECUTE $sql$
+      UPDATE ingredients
+      SET count_quantity = quantity,
+          count_unit =
+            CASE unit
+              WHEN 'pieces' THEN '個'
+              WHEN 'packs' THEN '包'
+              ELSE '個'
+            END
+      WHERE (unit IS NULL OR unit NOT IN ('g', 'kg', 'ml', 'L'))
+        AND count_quantity IS NULL
+        AND quantity IS NOT NULL
+    $sql$;
+  END IF;
+END $$;
+
+ALTER TABLE ingredients DROP COLUMN IF EXISTS quantity;
+ALTER TABLE ingredients DROP COLUMN IF EXISTS unit;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ingredients_count_positive') THEN
+    ALTER TABLE ingredients ADD CONSTRAINT ingredients_count_positive
+      CHECK (count_quantity IS NULL OR count_quantity > 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ingredients_measure_positive') THEN
+    ALTER TABLE ingredients ADD CONSTRAINT ingredients_measure_positive
+      CHECK (measure_quantity IS NULL OR measure_quantity > 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ingredients_count_pair') THEN
+    ALTER TABLE ingredients ADD CONSTRAINT ingredients_count_pair
+      CHECK ((count_quantity IS NULL AND count_unit IS NULL) OR (count_quantity IS NOT NULL AND count_unit IS NOT NULL));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ingredients_measure_pair') THEN
+    ALTER TABLE ingredients ADD CONSTRAINT ingredients_measure_pair
+      CHECK ((measure_quantity IS NULL AND measure_unit IS NULL) OR (measure_quantity IS NOT NULL AND measure_unit IS NOT NULL));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ingredients_has_quantity') THEN
+    ALTER TABLE ingredients ADD CONSTRAINT ingredients_has_quantity
+      CHECK (count_quantity IS NOT NULL OR measure_quantity IS NOT NULL);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_ingredients_user_id ON ingredients(user_id);
 CREATE INDEX IF NOT EXISTS idx_ingredients_expiry ON ingredients(expiry_date);

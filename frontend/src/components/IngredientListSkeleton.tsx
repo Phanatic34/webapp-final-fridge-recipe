@@ -1,8 +1,7 @@
 function SkeletonCard() {
   return (
     <li
-      className="flex flex-col rounded-2xl p-4 border border-white/70"
-      style={{ background: "rgba(255,255,255,0.52)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      className="flex flex-col rounded-xl border border-app-border bg-white p-4 shadow-sm"
       aria-hidden="true"
     >
       <div className="shimmer h-5 w-2/3 rounded-lg" />

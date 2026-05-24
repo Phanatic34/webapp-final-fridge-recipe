@@ -6,12 +6,9 @@ body {
   @apply antialiased;
 }
 
-/* 暖色玻璃背景 — 無法用 Tailwind class 表達的複合漸層 */
 .app-bg {
-  background:
-    radial-gradient(ellipse at 20% 0%, rgba(196,98,45,0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 10%, rgba(27,46,34,0.15) 0%, transparent 50%),
-    linear-gradient(160deg, #fdf8f3 0%, #f5ede3 40%, #ede8e0 100%);
+  background: #F6F8F3;
+  color: #172A21;
   min-height: 100vh;
 }
 

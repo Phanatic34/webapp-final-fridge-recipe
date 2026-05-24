@@ -90,8 +90,11 @@ export default function FridgePage() {
         : values.category;
     return {
       name: values.name,
-      quantity: values.quantity,
-      unit: values.unit,
+      count_quantity: values.count_quantity ?? null,
+      count_unit: values.count_quantity != null ? values.count_unit ?? null : null,
+      measure_quantity: values.measure_quantity ?? null,
+      measure_unit:
+        values.measure_quantity != null ? values.measure_unit ?? null : null,
       category,
       status: values.status,
       expiry_date: values.expiry_date?.trim() ? values.expiry_date : null,
@@ -149,7 +152,7 @@ export default function FridgePage() {
               <div className="flex flex-1 flex-col gap-1 sm:flex-none">
                 <label
                   htmlFor="sort"
-                  className="text-xs font-medium uppercase text-[#6B7280]"
+                  className="text-xs font-medium uppercase text-app-muted"
                 >
                   排序
                 </label>
@@ -157,7 +160,7 @@ export default function FridgePage() {
                   id="sort"
                   value={sort}
                   onChange={(e) => setSort(e.target.value as SortOption)}
-                  className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+                  className="rounded-lg border border-app-border bg-white px-3 py-2 text-sm text-app-text shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
                 >
                   <option value="created_at">新增日期</option>
                   <option value="name">名稱</option>
@@ -167,7 +170,7 @@ export default function FridgePage() {
               <div className="flex flex-1 flex-col gap-1 sm:flex-none">
                 <label
                   htmlFor="category"
-                  className="text-xs font-medium uppercase text-[#6B7280]"
+                  className="text-xs font-medium uppercase text-app-muted"
                 >
                   分類
                 </label>
@@ -175,7 +178,7 @@ export default function FridgePage() {
                   id="category"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+                  className="rounded-lg border border-app-border bg-white px-3 py-2 text-sm text-app-text shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
                 >
                   <option value="all">所有分類</option>
                   {CATEGORIES.map((c) => (
@@ -189,13 +192,13 @@ export default function FridgePage() {
             <div className="flex flex-col gap-1 sm:flex-1">
               <label
                 htmlFor="search"
-                className="text-xs font-medium uppercase text-[#6B7280]"
+                className="text-xs font-medium uppercase text-app-muted"
               >
                 搜尋食材
               </label>
               <div className="relative">
                 <svg
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-muted"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -214,7 +217,7 @@ export default function FridgePage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="搜尋食材..."
-                  className="w-full rounded-lg border border-[#E5E7EB] bg-white pl-9 pr-3 py-2 text-sm shadow-sm focus:border-[#C4622D] focus:outline-none focus:ring-1 focus:ring-[#C4622D]"
+                  className="w-full rounded-lg border border-app-border bg-white py-2 pl-9 pr-3 text-sm text-app-text shadow-sm placeholder:text-app-muted/70 focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
                 />
               </div>
             </div>
@@ -225,7 +228,7 @@ export default function FridgePage() {
               className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
               role="alert"
             >
-              <p className="text-sm text-red-800">
+              <p className="text-sm text-app-danger">
                 {error instanceof Error
                   ? error.message
                   : "無法載入食材，API 是否正在運行？"}
@@ -233,7 +236,7 @@ export default function FridgePage() {
               <button
                 type="button"
                 onClick={() => void refetch()}
-                className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800"
+                className="rounded-lg bg-app-danger px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
               >
                 重試
               </button>
@@ -247,12 +250,12 @@ export default function FridgePage() {
           )}
 
           {!isLoading && !isError && ingredients.length > 0 && filteredIngredients.length === 0 && (
-            <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#E5E7EB] py-12 text-center">
-              <p className="text-[#6B7280]">找不到符合「{search}」的食材。</p>
+            <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-app-border bg-app-surface/60 py-12 text-center">
+              <p className="text-app-muted">找不到符合「{search}」的食材。</p>
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="text-sm font-medium text-[#C4622D] hover:underline"
+                className="text-sm font-medium text-app-primary hover:underline"
               >
                 清除搜尋
               </button>
@@ -280,7 +283,7 @@ export default function FridgePage() {
         {!formOpen && (
           <motion.button
             type="button"
-            className="fixed bottom-6 right-6 z-40 sm:hidden flex h-12 w-12 items-center justify-center rounded-full bg-[#C4622D] text-white shadow-lg shadow-[#C4622D]/40 hover:bg-[#b3561f] transition-colors focus:outline-none"
+            className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-app-primary text-white shadow-lg shadow-green-900/20 transition-colors hover:bg-app-primary-hover focus:outline-none sm:hidden"
             onClick={openCreate}
             aria-label="新增食材"
             initial={{ scale: 0, opacity: 0 }}

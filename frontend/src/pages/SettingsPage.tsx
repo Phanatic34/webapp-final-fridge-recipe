@@ -69,12 +69,12 @@ export function SettingsPage() {
 
         {/* Equipment Section */}
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 160, damping: 20, delay: 0 }}>
-          <h2 className="text-lg font-semibold text-[#1B2E22] mb-1">我的廚房器具</h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <h2 className="text-lg font-semibold text-app-text mb-1">我的廚房器具</h2>
+          <p className="text-sm text-app-muted mb-4">
             勾選你擁有的器具，系統只推薦你能製作的食譜。未勾選任何器具時不進行器具篩選。
           </p>
           {settingsLoading ? (
-            <div className="text-sm text-gray-400">載入中…</div>
+            <div className="text-sm text-app-muted">載入中…</div>
           ) : (
             <div className="flex flex-wrap gap-2">
               {(settings?.predefinedEquipment ?? []).map((eq) => {
@@ -85,8 +85,8 @@ export function SettingsPage() {
                     onClick={() => handleEquipmentToggle(eq)}
                     className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
                       owned
-                        ? "border-green-400 bg-green-50 text-green-700"
-                        : "border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+                        ? "border-app-border bg-app-surface text-app-primary"
+                        : "border-app-border bg-white text-app-muted hover:border-app-primary hover:text-app-primary"
                     }`}
                   >
                     {owned ? "✓ " : ""}{eq}
@@ -97,20 +97,20 @@ export function SettingsPage() {
           )}
         </motion.section>
 
-        <hr className="border-gray-200" />
+        <hr className="border-app-border" />
 
         {/* Exclusions Section */}
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 160, damping: 20, delay: 0.2 }}>
-          <h2 className="text-lg font-semibold text-[#1B2E22] mb-1">不吃的食材</h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <h2 className="text-lg font-semibold text-app-text mb-1">不吃的食材</h2>
+          <p className="text-sm text-app-muted mb-4">
             含有以下食材的食譜將從推薦中排除。
           </p>
 
           {/* Allergen chips */}
           <div className="mb-3">
-            <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">常見過敏原</p>
+            <p className="text-xs uppercase tracking-wide text-app-muted mb-2">常見過敏原</p>
             {settingsLoading ? (
-              <div className="text-sm text-gray-400">載入中…</div>
+              <div className="text-sm text-app-muted">載入中…</div>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {(settings?.predefinedAllergens ?? []).map((allergen) => {
@@ -121,8 +121,8 @@ export function SettingsPage() {
                       onClick={() => handleAllergenToggle(allergen)}
                       className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
                         excluded
-                          ? "border-red-400 bg-red-50 text-red-700"
-                          : "border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+                          ? "border-red-200 bg-red-50 text-app-danger"
+                          : "border-app-border bg-white text-app-muted hover:border-app-primary hover:text-app-primary"
                       }`}
                     >
                       {excluded ? "✕ " : ""}{allergen}
@@ -135,7 +135,7 @@ export function SettingsPage() {
 
           {/* Custom exclusion input */}
           <div className="mb-3">
-            <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">自訂排除食材</p>
+            <p className="text-xs uppercase tracking-wide text-app-muted mb-2">自訂排除食材</p>
             <div className="flex gap-2 max-w-sm">
               <input
                 type="text"
@@ -143,12 +143,12 @@ export function SettingsPage() {
                 onChange={(e) => setCustomInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddCustom()}
                 placeholder="輸入食材名稱後按 Enter 或點新增"
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C4622D] focus:outline-none"
+                className="flex-1 rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none"
               />
               <button
                 onClick={handleAddCustom}
                 disabled={!customInput.trim()}
-                className="rounded-lg bg-[#C4622D] px-4 py-2 text-sm font-medium text-white disabled:opacity-40 hover:bg-[#b3561f]"
+                className="rounded-lg bg-app-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-40 hover:bg-app-primary-hover"
               >
                 新增
               </button>
@@ -163,12 +163,12 @@ export function SettingsPage() {
                 .map((ex) => (
                   <span
                     key={ex.name}
-                    className="inline-flex items-center gap-1 rounded-full border border-red-300 bg-red-50 px-3 py-1 text-sm text-red-700"
+                    className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm text-app-danger"
                   >
                     {ex.name}
                     <button
                       onClick={() => removeExclusion.mutate(ex.name)}
-                      className="ml-1 text-red-400 hover:text-red-600"
+                      className="ml-1 text-app-danger hover:text-red-700"
                       aria-label={`移除 ${ex.name}`}
                     >
                       ✕
