@@ -60,33 +60,33 @@ export function IngredientCard({ ingredient, onEdit, onDelete }: Props) {
 
   return (
     <motion.article
-      className="flex flex-col rounded-xl border border-app-border bg-app-card p-4 shadow-sm"
+      className="flex h-48 flex-col overflow-hidden rounded-xl border border-app-border bg-app-card p-4 shadow-sm"
       whileHover={{ y: -3, boxShadow: "0 2px 4px rgba(23,42,33,0.06), 0 12px 32px rgba(23,42,33,0.08)" }}
       transition={{ type: "spring", stiffness: 180, damping: 18 }}
     >
-      <div className="flex flex-1 flex-col gap-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-semibold leading-tight text-app-text">
+          <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight text-app-text">
             {ingredient.name}
           </h3>
           <CategoryBadge category={ingredient.category} />
         </div>
-        <p className="text-sm text-app-muted">
+        <p className="truncate text-sm text-app-muted">
           <span className="font-medium text-app-text">
             {formatQuantity(ingredient)}
           </span>
         </p>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-h-[24px] flex-nowrap items-center gap-2 overflow-hidden">
           <StatusTag status={ingredient.status} />
           <ExpiryBadge ingredient={ingredient} />
         </div>
         {expiryLabel && (
-          <p className="text-xs text-app-muted">
+          <p className="truncate text-xs text-app-muted">
             到期：<span className="text-app-text">{expiryLabel}</span>
           </p>
         )}
       </div>
-      <div className="mt-4 flex gap-2 border-t border-app-border pt-3">
+      <div className="mt-auto flex gap-2 border-t border-app-border pt-3">
         <button
           type="button"
           onClick={() => onEdit(ingredient)}

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useShoppingList } from "../hooks/useShoppingList";
+import logoUrl from "../assets/logo.png";
 
 type Props = {
   children: ReactNode;
@@ -40,28 +41,33 @@ export function Layout({
   return (
     <div className="app-bg">
       <header
-        className="sticky top-0 z-50 border-b border-app-border bg-white/95 shadow-sm backdrop-blur"
+        className="sticky top-0 z-50 border-b border-app-border bg-app-header-bg shadow-sm"
       >
         {/* Title row */}
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:min-h-[64px]">
-          <h1 className="flex items-center gap-2 font-['Noto_Serif_TC'] text-xl font-bold tracking-tight text-app-text">
-            <span className="h-2.5 w-2.5 rounded-full bg-app-primary" aria-hidden />
+          <h1 className="flex items-center gap-2 font-['Noto_Serif_TC'] text-xl font-bold tracking-tight text-app-header-text">
+            <img
+              src={logoUrl}
+              alt=""
+              aria-hidden="true"
+              className="h-8 w-8 rounded-md bg-app-header-cta object-cover ring-1 ring-app-header-accent"
+            />
             冰箱食譜推薦
           </h1>
 
           {/* Desktop: right-side actions */}
-          <div className="hidden sm:flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {showStats && (
-              <span className="text-sm text-app-muted">
-                <strong className="text-app-text">{totalCount}</strong> 件食材
+              <span className="hidden text-sm text-app-header-inactive sm:inline">
+                <strong className="text-app-header-text">{totalCount}</strong> 件食材
               </span>
             )}
-            {headerRight}
+            {headerRight && <div className="hidden sm:contents">{headerRight}</div>}
             {onAddClick && (
               <button
                 type="button"
                 onClick={onAddClick}
-                className="rounded-lg bg-app-primary px-4 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-app-primary-hover focus:outline-none focus:ring-2 focus:ring-app-primary focus:ring-offset-2"
+                className="rounded-lg border border-app-header-accent bg-app-header-cta px-3 py-1.5 text-xs font-medium text-app-primary shadow-sm transition hover:bg-app-header-cta-hover hover:text-app-header-cta-text-hover focus:outline-none focus:ring-2 focus:ring-app-header-accent focus:ring-offset-2 focus:ring-offset-app-header-bg sm:px-4 sm:text-sm"
               >
                 新增食材
               </button>
@@ -71,7 +77,7 @@ export function Layout({
           {/* Mobile: hamburger button */}
           <button
             type="button"
-            className="relative rounded p-1.5 text-app-muted transition hover:bg-app-surface hover:text-app-text sm:hidden"
+            className="relative rounded p-1.5 text-app-header-inactive transition hover:bg-app-header-accent/15 hover:text-app-header-text sm:hidden"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? "關閉選單" : "開啟選單"}
             aria-expanded={menuOpen}
@@ -118,8 +124,8 @@ export function Layout({
                   className={({ isActive }) =>
                     `inline-block rounded-t-lg border-b-2 px-2 py-2 text-xs sm:px-4 sm:text-sm font-medium transition ${
                       isActive
-                        ? "border-app-primary text-app-primary"
-                        : "border-transparent text-app-muted hover:border-app-border hover:text-app-text"
+                        ? "border-app-header-accent text-app-header-text"
+                        : "border-transparent text-app-header-inactive hover:border-app-header-accent/70 hover:text-app-header-text"
                     }`
                   }
                 >
@@ -139,7 +145,7 @@ export function Layout({
         <AnimatePresence>
           {menuOpen && (
             <motion.div
-              className="overflow-hidden border-t border-app-border bg-white sm:hidden"
+              className="overflow-hidden border-t border-app-border bg-app-header-bg sm:hidden"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -153,7 +159,7 @@ export function Layout({
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.05, duration: 0.18 }}
-                      className="border-b border-app-border last:border-none"
+                      className="border-b border-app-header-accent/25 last:border-none"
                     >
                       <NavLink
                         to={item.to}
@@ -162,8 +168,8 @@ export function Layout({
                         className={({ isActive }) =>
                           `flex items-center justify-between px-6 py-4 text-sm font-medium transition ${
                             isActive
-                              ? "text-app-primary"
-                              : "text-app-muted hover:text-app-text"
+                              ? "text-app-header-text"
+                              : "text-app-header-inactive hover:text-app-header-text"
                           }`
                         }
                       >
@@ -172,7 +178,7 @@ export function Layout({
                             <span className="flex items-center gap-3">
                               <span
                                 className={`h-1.5 w-1.5 rounded-full transition ${
-                                  isActive ? "bg-app-primary" : "bg-app-border"
+                                  isActive ? "bg-app-header-accent" : "bg-app-header-inactive/40"
                                 }`}
                               />
                               {item.label}

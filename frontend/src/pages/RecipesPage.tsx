@@ -39,16 +39,16 @@ function AllRecipeCard({ recipe }: { recipe: Recipe }) {
   return (
     <Link
       to={`/recipes/${recipe.id}`}
-      className="group flex flex-col rounded-2xl overflow-hidden bg-white shadow-sm ring-1 ring-app-border transition hover:-translate-y-0.5 hover:shadow-md"
+      className="group flex h-[440px] flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-app-border transition hover:-translate-y-0.5 hover:shadow-md"
     >
       {recipe.image_url ? (
         <img src={recipe.image_url} alt={recipe.title} className="h-36 w-full object-cover" />
       ) : (
         <div className="flex h-36 w-full items-center justify-center bg-app-surface text-4xl">🍽️</div>
       )}
-      <div className="flex flex-col gap-2 p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
+          <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
             {recipe.title}
           </h3>
           {recipe.cuisine && (
@@ -60,7 +60,7 @@ function AllRecipeCard({ recipe }: { recipe: Recipe }) {
         {recipe.description && (
           <p className="line-clamp-2 text-sm text-app-muted">{recipe.description}</p>
         )}
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
+        <div className="mt-auto flex flex-nowrap items-center gap-2 overflow-hidden pt-2">
           <DifficultyBadge difficulty={recipe.difficulty} />
           {recipe.cooking_time !== null && (
             <span className="text-xs text-app-muted">{recipe.cooking_time} 分鐘</span>
@@ -88,7 +88,7 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
   return (
     <Link
       to={`/recipes/${rec.recipe.id}`}
-      className={`group flex flex-col rounded-2xl overflow-hidden shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ring}`}
+      className={`group flex h-[440px] flex-col overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ring}`}
     >
       {rec.recipe.image_url ? (
         <img
@@ -101,9 +101,9 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
           🍽️
         </div>
       )}
-      <div className="flex flex-col gap-2 p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
+          <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
             {rec.recipe.title}
           </h3>
           {rec.recipe.cuisine && (
@@ -119,7 +119,7 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
           </p>
         )}
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-nowrap items-center gap-2 overflow-hidden">
           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-app-success ring-1 ring-emerald-100">
             {matchLabel}
           </span>
@@ -127,7 +127,7 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
         </div>
 
         {rec.uses_near_expiry && rec.near_expiry_ingredients.length > 0 && (
-          <p className="text-sm text-app-warning">
+          <p className="line-clamp-1 text-sm text-app-warning">
             即將到期加分：{" "}
             <span className="font-medium">
               {rec.near_expiry_ingredients.join("、")}
@@ -135,24 +135,24 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
           </p>
         )}
 
-        <p className="text-xs text-app-muted">{missingLabel}</p>
+        <p className="line-clamp-1 text-xs text-app-muted">{missingLabel}</p>
 
         {rec.ai_explanation ? (
-          <div className="pt-2">
+          <div className="min-h-[52px] pt-2">
             <p className="text-xs font-medium text-app-success mb-0.5">🤖 AI 推薦理由</p>
-            <p className="text-sm text-app-text line-clamp-1">{rec.ai_explanation}</p>
+            <p className="line-clamp-2 text-sm text-app-text">{rec.ai_explanation}</p>
           </div>
         ) : (
-          <div className="pt-2">
-            {rec.explanation.slice(0, 3).map((line, i) => (
-              <p key={i} className="text-sm text-app-muted">
+          <div className="min-h-[52px] pt-2">
+            {rec.explanation.slice(0, 2).map((line, i) => (
+              <p key={i} className="line-clamp-1 text-sm text-app-muted">
                 {line}
               </p>
             ))}
           </div>
         )}
 
-        <div className="mt-auto flex flex-wrap items-center gap-3 pt-3">
+        <div className="mt-auto flex flex-nowrap items-center gap-3 overflow-hidden pt-3">
           <ProgressRing ratio={rec.match_ratio} size={44} />
           {rec.recipe.cooking_time !== null && (
             <span className="text-xs text-app-muted">{rec.recipe.cooking_time} 分鐘</span>

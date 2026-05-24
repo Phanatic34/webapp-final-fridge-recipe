@@ -16,6 +16,15 @@ export default {
           success: "#059669",
           warning: "#D97706",
           danger: "#DC2626",
+          header: {
+            bg: "#6F927D",
+            text: "#FFFFFF",
+            inactive: "#EEF5EC",
+            accent: "#E6F0E8",
+            cta: "#F8FAF5",
+            "cta-hover": "#EAF4EC",
+            "cta-text-hover": "#2F5D46",
+          },
         },
       },
       boxShadow: {
