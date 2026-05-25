@@ -389,6 +389,92 @@ router.get("/recommended", async (req: Request, res: Response) => {
   }
 });
 
+/** POST /api/recipes */
+router.post("/", async (req: Request, res: Response) => {
+  const {
+    title,
+    description,
+    cuisine,
+    cooking_time,
+    servings,
+    difficulty,
+    instructions,
+    ingredients,
+  } = req.body as {
+    title?: unknown;
+    description?: unknown;
+    cuisine?: unknown;
+    cooking_time?: unknown;
+    servings?: unknown;
+    difficulty?: unknown;
+    instructions?: unknown;
+    ingredients?: unknown;
+  };
+
+  if (typeof title !== "string" || !title.trim()) {
+    res.status(400).json({ error: "title is required" });
+    return;
+  }
+
+  const cookingTime =
+    cooking_time !== undefined && cooking_time !== "" && cooking_time !== null
+      ? Number(cooking_time)
+      : null;
+  const servingsNum =
+    servings !== undefined && servings !== "" && servings !== null
+      ? Number(servings)
+      : 2;
+
+  try {
+    const recipeResult = await pool.query<RecipeRow>(
+      `INSERT INTO recipes (title, description, cuisine, cooking_time, servings, difficulty, instructions)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [
+        title.trim(),
+        typeof description === "string" && description.trim() ? description.trim() : null,
+        typeof cuisine === "string" && cuisine.trim() ? cuisine.trim() : null,
+        cookingTime && !Number.isNaN(cookingTime) ? cookingTime : null,
+        servingsNum && !Number.isNaN(servingsNum) ? servingsNum : 2,
+        typeof difficulty === "string" && difficulty.trim() ? difficulty.trim() : "medium",
+        typeof instructions === "string" && instructions.trim() ? instructions.trim() : null,
+      ]
+    );
+
+    const recipe = recipeResult.rows[0];
+
+    if (Array.isArray(ingredients)) {
+      for (const ing of ingredients) {
+        if (
+          ing &&
+          typeof ing === "object" &&
+          typeof ing.name === "string" &&
+          ing.name.trim()
+        ) {
+          const ingQty =
+            ing.quantity !== undefined && ing.quantity !== "" && ing.quantity !== null
+              ? Number(ing.quantity)
+              : null;
+          await pool.query(
+            `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit) VALUES ($1, $2, $3, $4)`,
+            [
+              recipe.id,
+              ing.name.trim(),
+              ingQty && !Number.isNaN(ingQty) ? ingQty : null,
+              typeof ing.unit === "string" && ing.unit.trim() ? ing.unit.trim() : null,
+            ]
+          );
+        }
+      }
+    }
+
+    res.status(201).json({ recipe: rowToResponse(recipe) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to create recipe" });
+  }
+});
+
 /** GET /api/recipes?cuisine= */
 router.get("/", async (req: Request, res: Response) => {
   try {

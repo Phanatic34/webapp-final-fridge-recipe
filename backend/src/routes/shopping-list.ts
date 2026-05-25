@@ -35,6 +35,52 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
+// POST /api/shopping-list — manual add
+router.post("/", async (req: Request, res: Response) => {
+  const { ingredient_name, quantity, unit } = req.body as {
+    ingredient_name?: unknown;
+    quantity?: unknown;
+    unit?: unknown;
+  };
+
+  if (typeof ingredient_name !== "string" || !ingredient_name.trim()) {
+    res.status(400).json({ error: "ingredient_name is required" });
+    return;
+  }
+
+  const qty =
+    quantity !== undefined && quantity !== "" && quantity !== null
+      ? Number(quantity)
+      : null;
+  if (qty !== null && (Number.isNaN(qty) || qty <= 0)) {
+    res.status(400).json({ error: "quantity must be a positive number" });
+    return;
+  }
+
+  const unitStr =
+    typeof unit === "string" && unit.trim() ? unit.trim() : null;
+
+  try {
+    const result = await pool.query<ShoppingListRow>(
+      `INSERT INTO shopping_list (user_id, ingredient_name, quantity, unit)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, ingredient_name) DO NOTHING
+       RETURNING *`,
+      [USER_ID, ingredient_name.trim(), qty, unitStr]
+    );
+    if (result.rows.length === 0) {
+      res
+        .status(409)
+        .json({ error: `「${ingredient_name.trim()}」已在購物清單中` });
+      return;
+    }
+    res.status(201).json(result.rows[0]);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to add item" });
+  }
+});
+
 // POST /api/shopping-list/from-recipe/:recipeId — MUST be before /:id
 router.post("/from-recipe/:recipeId", async (req: Request, res: Response) => {
   const recipeId = Number.parseInt(req.params.recipeId, 10);

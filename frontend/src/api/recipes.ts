@@ -30,6 +30,22 @@ export type RecommendedParams = {
   maxTime?: number | null;
 };
 
+export type RecipeCreatePayload = {
+  title: string;
+  description?: string;
+  cuisine?: string;
+  cooking_time?: number | null;
+  servings?: number;
+  difficulty?: string;
+  instructions?: string;
+  ingredients: { name: string; quantity?: number | null; unit?: string }[];
+};
+
+export async function createRecipe(payload: RecipeCreatePayload): Promise<Recipe> {
+  const { data } = await api.post<{ recipe: Recipe }>("/api/recipes", payload);
+  return data.recipe;
+}
+
 export async function fetchRecommendedRecipes(
   params: RecommendedParams = {}
 ): Promise<{ recommendations: RecipeRecommendation[] }> {

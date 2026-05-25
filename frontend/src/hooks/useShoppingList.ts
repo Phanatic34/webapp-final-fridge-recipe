@@ -2,10 +2,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchShoppingList,
   addFromRecipe,
+  addManualItem,
   toggleShoppingItem,
   updateShoppingItemQuantity,
   deleteShoppingItem,
   clearCheckedItems,
+  type ManualAddPayload,
 } from "../api/shoppingList";
 
 export function useShoppingList() {
@@ -16,6 +18,14 @@ export function useAddFromRecipe() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (recipeId: number) => addFromRecipe(recipeId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping-list"] }),
+  });
+}
+
+export function useAddManualShoppingItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ManualAddPayload) => addManualItem(payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping-list"] }),
   });
 }
