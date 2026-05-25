@@ -152,18 +152,6 @@ export default function ShoppingListPage() {
           勾選表示已購買，可在店內填入到期日，回家後點「加入冰箱」補充庫存。
         </p>
 
-        {hasChecked && (
-          <button
-            onClick={() => void handleAddAllCheckedToFridge()}
-            disabled={addingAll}
-            className="hidden sm:block w-full rounded-xl bg-app-primary px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-app-primary-hover transition disabled:opacity-50"
-          >
-            {addingAll
-              ? "加入中…"
-              : `將 ${checkedItems.length} 項已購食材加入冰箱`}
-          </button>
-        )}
-
         {shoppingList.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-app-border py-12 text-center">
             <p className="text-app-muted">購物清單是空的。</p>
@@ -373,6 +361,18 @@ export default function ShoppingListPage() {
               </li>
             ))}
           </ul>
+        )}
+
+        {hasChecked && (
+          <button
+            onClick={() => void handleAddAllCheckedToFridge()}
+            disabled={addingAll}
+            className="hidden sm:block w-full rounded-xl bg-app-primary px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-app-primary-hover transition disabled:opacity-50"
+          >
+            {addingAll
+              ? "加入中…"
+              : `將 ${checkedItems.length} 項已購食材加入冰箱`}
+          </button>
         )}
       </motion.div>
 
