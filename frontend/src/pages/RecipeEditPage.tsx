@@ -68,6 +68,13 @@ export default function RecipeEditPage() {
     setIngredients((prev) => [...prev, { id: nextId++, name: "", quantity: "", unit: "", allergens: [] }]);
   }
 
+  function handleIngredientEnter(row: IngredientRow) {
+    if (row.name.trim() && row.allergens.length === 0) {
+      void handleAutoDetect(row.id, row.name);
+    }
+    addIngredientRow();
+  }
+
   function removeIngredientRow(id: number) {
     setIngredients((prev) => prev.filter((r) => r.id !== id));
   }
@@ -287,6 +294,7 @@ export default function RecipeEditPage() {
                       type="text"
                       value={row.name}
                       onChange={(e) => updateIngredientRow(row.id, "name", e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleIngredientEnter(row); } }}
                       placeholder="食材名稱"
                       className="min-w-0 flex-1 rounded-lg border border-app-border bg-white px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
                     />
@@ -296,6 +304,7 @@ export default function RecipeEditPage() {
                       step="any"
                       value={row.quantity}
                       onChange={(e) => updateIngredientRow(row.id, "quantity", e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleIngredientEnter(row); } }}
                       placeholder="數量"
                       className="w-20 rounded-lg border border-app-border bg-white px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
                     />
@@ -303,6 +312,7 @@ export default function RecipeEditPage() {
                       type="text"
                       value={row.unit}
                       onChange={(e) => updateIngredientRow(row.id, "unit", e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleIngredientEnter(row); } }}
                       placeholder="單位"
                       className="w-16 rounded-lg border border-app-border bg-white px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
                     />
