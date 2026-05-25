@@ -1,3 +1,12 @@
+-- Users
+CREATE TABLE IF NOT EXISTS users (
+  id            SERIAL PRIMARY KEY,
+  email         TEXT UNIQUE NOT NULL,
+  display_name  TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Fridge Recipe Recommender — MVP ingredient inventory
 CREATE TABLE IF NOT EXISTS ingredients (
   id            SERIAL PRIMARY KEY,
@@ -93,6 +102,7 @@ CREATE INDEX IF NOT EXISTS idx_ingredients_expiry ON ingredients(expiry_date);
 -- Phase 3: Recipe data model
 CREATE TABLE IF NOT EXISTS recipes (
   id              SERIAL PRIMARY KEY,
+  user_id         INTEGER REFERENCES users(id) ON DELETE CASCADE,
   title           VARCHAR(255) NOT NULL,
   description     TEXT,
   image_url       TEXT,
@@ -104,6 +114,9 @@ CREATE TABLE IF NOT EXISTS recipes (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_recipes_user_id ON recipes(user_id);
 
 CREATE TABLE IF NOT EXISTS recipe_ingredients (
   id              SERIAL PRIMARY KEY,

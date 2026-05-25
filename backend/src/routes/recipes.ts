@@ -15,7 +15,6 @@ import type {
 
 const router = Router();
 
-const DEFAULT_USER_ID = 1;
 
 function rowToResponse(row: RecipeRow): RecipeResponse {
   return {
@@ -141,11 +140,12 @@ type RecipeWithIngredients = RecipeRow & {
   ingredientRows: RecipeIngredientRow[];
 };
 
-async function loadAllRecipesWithIngredients(): Promise<
+async function loadAllRecipesWithIngredients(userId: number): Promise<
   RecipeWithIngredients[]
 > {
   const recipesResult = await pool.query<RecipeRow>(
-    `SELECT * FROM recipes ORDER BY title`
+    `SELECT * FROM recipes WHERE user_id = $1 ORDER BY title`,
+    [userId]
   );
 
   const riResult = await pool.query<RecipeIngredientRow>(
@@ -317,10 +317,10 @@ router.get("/recommended", async (req: Request, res: Response) => {
   try {
     const [fridge, recipes, exclusions, userEquipment, recipeEquipmentMap] =
       await Promise.all([
-        loadFridge(DEFAULT_USER_ID),
-        loadAllRecipesWithIngredients(),
-        loadExclusions(DEFAULT_USER_ID),
-        loadUserEquipment(DEFAULT_USER_ID),
+        loadFridge(req.userId),
+        loadAllRecipesWithIngredients(req.userId),
+        loadExclusions(req.userId),
+        loadUserEquipment(req.userId),
         loadRecipeEquipmentMap(),
       ]);
 
@@ -441,10 +441,11 @@ router.post("/", async (req: Request, res: Response) => {
 
   try {
     const recipeResult = await pool.query<RecipeRow>(
-      `INSERT INTO recipes (title, description, cuisine, cooking_time, servings, difficulty, instructions)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO recipes (user_id, title, description, cuisine, cooking_time, servings, difficulty, instructions)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
+        req.userId,
         title.trim(),
         typeof description === "string" && description.trim() ? description.trim() : null,
         typeof cuisine === "string" && cuisine.trim() ? cuisine.trim() : null,
@@ -515,7 +516,7 @@ router.put("/:id", async (req: Request, res: Response) => {
   try {
     const result = await pool.query<RecipeRow>(
       `UPDATE recipes SET title=$1, description=$2, cuisine=$3, cooking_time=$4, servings=$5,
-       difficulty=$6, instructions=$7, updated_at=NOW() WHERE id=$8 RETURNING *`,
+       difficulty=$6, instructions=$7, updated_at=NOW() WHERE id=$8 AND user_id=$9 RETURNING *`,
       [
         title.trim(),
         typeof description === "string" && description.trim() ? description.trim() : null,
@@ -525,6 +526,7 @@ router.put("/:id", async (req: Request, res: Response) => {
         typeof difficulty === "string" && difficulty.trim() ? difficulty.trim() : "medium",
         typeof instructions === "string" && instructions.trim() ? instructions.trim() : null,
         id,
+        req.userId,
       ]
     );
 
@@ -563,7 +565,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   try {
-    const result = await pool.query("DELETE FROM recipes WHERE id = $1 RETURNING id", [id]);
+    const result = await pool.query("DELETE FROM recipes WHERE id = $1 AND user_id = $2 RETURNING id", [id, req.userId]);
     if (result.rowCount === 0) { res.status(404).json({ error: "Recipe not found" }); return; }
     res.status(204).send();
   } catch (e) {
@@ -577,11 +579,11 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const cuisine = req.query.cuisine as string | undefined;
 
-    const params: unknown[] = [];
-    let where = "";
+    const params: unknown[] = [req.userId];
+    let where = "WHERE r.user_id = $1";
     if (cuisine && cuisine !== "all") {
       params.push(cuisine);
-      where = `WHERE LOWER(r.cuisine) = LOWER($${params.length})`;
+      where += ` AND LOWER(r.cuisine) = LOWER($${params.length})`;
     }
 
     const result = await pool.query<RecipeRow>(
@@ -606,8 +608,8 @@ router.get("/:id", async (req: Request, res: Response) => {
 
   try {
     const recipeResult = await pool.query<RecipeRow>(
-      `SELECT * FROM recipes WHERE id = $1`,
-      [id]
+      `SELECT * FROM recipes WHERE id = $1 AND user_id = $2`,
+      [id, req.userId]
     );
 
     if (recipeResult.rows.length === 0) {

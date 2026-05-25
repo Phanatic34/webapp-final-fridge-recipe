@@ -1,8 +1,10 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { useShoppingList } from "../hooks/useShoppingList";
+import { useAuth } from "../context/AuthContext";
 import logoUrl from "../assets/logo.png";
 
 type Props = {
@@ -37,6 +39,15 @@ export function Layout({
     nearExpiryCount !== undefined &&
     expiredCount !== undefined;
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  function handleLogout() {
+    logout();
+    queryClient.clear();
+    navigate("/login");
+  }
 
   return (
     <div className="app-bg">
@@ -71,6 +82,18 @@ export function Layout({
               >
                 新增食材
               </button>
+            )}
+            {user && (
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="text-xs text-app-header-inactive">{user.display_name}</span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-lg border border-app-header-accent/50 px-3 py-1.5 text-xs font-medium text-app-header-inactive transition hover:border-app-header-accent hover:text-app-header-text"
+                >
+                  登出
+                </button>
+              </div>
             )}
           </div>
 
@@ -194,7 +217,18 @@ export function Layout({
                     </motion.li>
                   ))}
                 </ul>
-
+                {user && (
+                  <div className="flex items-center justify-between border-t border-app-header-accent/25 px-6 py-4">
+                    <span className="text-sm text-app-header-inactive">{user.display_name}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setMenuOpen(false); handleLogout(); }}
+                      className="text-sm font-medium text-app-header-inactive hover:text-app-header-text transition"
+                    >
+                      登出
+                    </button>
+                  </div>
+                )}
               </nav>
             </motion.div>
           )}
