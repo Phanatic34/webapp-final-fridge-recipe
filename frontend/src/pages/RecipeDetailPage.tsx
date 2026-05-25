@@ -194,6 +194,19 @@ export default function RecipeDetailPage() {
                   ))}
                 </ul>
 
+                {recommendation.insufficient_ingredients.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">數量不足</p>
+                    <div className="flex flex-wrap gap-1">
+                      {recommendation.insufficient_ingredients.map((name) => (
+                        <span key={name} className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700 ring-1 ring-amber-100">
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {recommendation.missing_ingredients.length > 0 && (
                   <div>
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">尚缺食材</p>

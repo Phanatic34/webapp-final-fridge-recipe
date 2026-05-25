@@ -43,38 +43,96 @@ function ingredientRowToResponse(row: RecipeIngredientRow): RecipeIngredient {
 
 // ─── Recommendation helpers ────────────────────────────────────
 
-type FridgeItem = {
-  name: string;
+type FridgeQuantity = {
   is_near_expiry: boolean;
+  count_qty: number | null;
+  count_unit: string | null;
+  measure_qty: number | null;
+  measure_unit: string | null;
 };
 
-/**
- * Build a Set of lowercase ingredient names currently in the fridge,
- * plus a Set of those that are near-expiry.
- */
 async function loadFridge(userId: number) {
-  // TODO: Recommendation matching currently checks ingredient names only.
-  // Future scoring should compare required recipe quantities against available
-  // count_quantity/measure_quantity with unit conversion where safe.
   const { rows } = await pool.query<{
     name: string;
     expiry_date: string | Date | null;
+    count_quantity: string | null;
+    count_unit: string | null;
+    measure_quantity: string | null;
+    measure_unit: string | null;
   }>(
-    `SELECT name, expiry_date FROM ingredients WHERE user_id = $1`,
+    `SELECT name, expiry_date, count_quantity, count_unit, measure_quantity, measure_unit
+     FROM ingredients WHERE user_id = $1`,
     [userId]
   );
 
-  const items: FridgeItem[] = rows.map((r) => {
+  const itemMap = new Map<string, FridgeQuantity>();
+  for (const r of rows) {
     const meta = computeExpiryMeta(r.expiry_date);
-    return { name: r.name, is_near_expiry: meta.is_near_expiry };
-  });
+    itemMap.set(r.name.toLowerCase(), {
+      is_near_expiry: meta.is_near_expiry,
+      count_qty: r.count_quantity !== null ? Number.parseFloat(r.count_quantity) : null,
+      count_unit: r.count_unit,
+      measure_qty: r.measure_quantity !== null ? Number.parseFloat(r.measure_quantity) : null,
+      measure_unit: r.measure_unit,
+    });
+  }
 
-  const nameSet = new Set(items.map((i) => i.name.toLowerCase()));
-  const nearExpirySet = new Set(
-    items.filter((i) => i.is_near_expiry).map((i) => i.name.toLowerCase())
-  );
+  return { itemMap };
+}
 
-  return { nameSet, nearExpirySet };
+function toGrams(qty: number, unit: string): number | null {
+  switch (unit.toLowerCase().trim()) {
+    case "g":  return qty;
+    case "kg": return qty * 1000;
+    default:   return null;
+  }
+}
+
+function toMl(qty: number, unit: string): number | null {
+  switch (unit.toLowerCase().trim()) {
+    case "ml": return qty;
+    case "l":  return qty * 1000;
+    default:   return null;
+  }
+}
+
+const COUNT_CANONICAL: Record<string, string> = {
+  pieces: "pieces", "個": "pieces", pcs: "pieces", pc: "pieces",
+  packs: "packs",   "包": "packs",  pack: "packs",
+};
+
+function isSufficientQty(
+  fridge: FridgeQuantity,
+  recipeQty: number | null,
+  recipeUnit: string | null
+): boolean {
+  if (recipeQty === null || recipeUnit === null) return true;
+
+  const rUnit = recipeUnit.toLowerCase().trim();
+
+  // Weight comparison (g / kg)
+  const rGrams = toGrams(recipeQty, rUnit);
+  if (rGrams !== null && fridge.measure_qty !== null && fridge.measure_unit !== null) {
+    const fGrams = toGrams(fridge.measure_qty, fridge.measure_unit);
+    if (fGrams !== null) return fGrams >= rGrams;
+  }
+
+  // Volume comparison (ml / L)
+  const rMl = toMl(recipeQty, rUnit);
+  if (rMl !== null && fridge.measure_qty !== null && fridge.measure_unit !== null) {
+    const fMl = toMl(fridge.measure_qty, fridge.measure_unit);
+    if (fMl !== null) return fMl >= rMl;
+  }
+
+  // Count comparison (pieces / 個 / packs / 包)
+  const rCanon = COUNT_CANONICAL[rUnit];
+  if (rCanon !== undefined && fridge.count_qty !== null && fridge.count_unit !== null) {
+    const fCanon = COUNT_CANONICAL[fridge.count_unit.toLowerCase().trim()];
+    if (fCanon === rCanon) return fridge.count_qty >= recipeQty;
+  }
+
+  // Incompatible or unknown units (tbsp, tsp, …) → name match is enough
+  return true;
 }
 
 type RecipeWithIngredients = RecipeRow & {
@@ -156,29 +214,33 @@ async function loadRecipeEquipmentMap(): Promise<Map<number, string[]>> {
  * Score one recipe against the fridge.
  *
  * Ranking formula (higher = better):
- *   score = match_ratio                        (0.0 – 1.0)
- *         + 0.15  if any matched ingredient is near-expiry
- *         - 0.05 * missing_count               (penalty per missing item)
+ *   score = match_ratio                        (0.0 – 1.0, sufficient matches only)
+ *         + 0.15  if any sufficient-matched ingredient is near-expiry
+ *         - 0.05 * (missing_count + insufficient_count)
  *
- * match_ratio alone is the primary factor (what % of ingredients you have).
- * The near-expiry bonus nudges recipes that help use up expiring food.
- * The missing-count penalty breaks ties between equal-ratio recipes.
+ * "insufficient" = ingredient exists in fridge but quantity is below what the recipe needs.
+ * Insufficient items are excluded from match_ratio but keep the recipe visible in results.
  */
 function scoreRecipe(
   recipe: RecipeWithIngredients,
-  fridgeNames: Set<string>,
-  nearExpiryNames: Set<string>
+  itemMap: Map<string, FridgeQuantity>
 ): RecommendationResponse {
   const matched: string[] = [];
+  const insufficient: string[] = [];
   const missing: string[] = [];
   const nearExpiryUsed: string[] = [];
 
   for (const ri of recipe.ingredientRows) {
     const lower = ri.name.toLowerCase();
-    if (fridgeNames.has(lower)) {
-      matched.push(ri.name);
-      if (nearExpiryNames.has(lower)) {
-        nearExpiryUsed.push(ri.name);
+    const fridgeItem = itemMap.get(lower);
+
+    if (fridgeItem) {
+      const recipeQty = ri.quantity !== null ? Number.parseFloat(String(ri.quantity)) : null;
+      if (isSufficientQty(fridgeItem, recipeQty, ri.unit)) {
+        matched.push(ri.name);
+        if (fridgeItem.is_near_expiry) nearExpiryUsed.push(ri.name);
+      } else {
+        insufficient.push(ri.name);
       }
     } else {
       missing.push(ri.name);
@@ -188,6 +250,7 @@ function scoreRecipe(
   const total = recipe.ingredientRows.length;
   const matchRatio = total > 0 ? matched.length / total : 0;
   const usesNearExpiry = nearExpiryUsed.length > 0;
+  const effectiveMissingCount = missing.length + insufficient.length;
 
   const explanation: string[] = [];
 
@@ -196,15 +259,15 @@ function scoreRecipe(
   } else if (matched.length === total) {
     explanation.push("你已擁有所有所需食材！");
   } else {
-    explanation.push(
-      `你已擁有 ${matched.length} / ${total} 項所需食材。`
-    );
+    explanation.push(`你已擁有 ${matched.length} / ${total} 項所需食材。`);
   }
 
   if (usesNearExpiry) {
-    explanation.push(
-      `可消耗即將到期食材：${nearExpiryUsed.join("、")}。`
-    );
+    explanation.push(`可消耗即將到期食材：${nearExpiryUsed.join("、")}。`);
+  }
+
+  if (insufficient.length > 0) {
+    explanation.push(`以下食材數量不足：${insufficient.join("、")}。`);
   }
 
   if (missing.length > 0 && missing.length <= 3) {
@@ -218,10 +281,11 @@ function scoreRecipe(
     ingredients: recipe.ingredientRows.map(ingredientRowToResponse),
     match_count: matched.length,
     total_ingredients: total,
-    missing_count: missing.length,
+    missing_count: effectiveMissingCount,
     match_ratio: Math.round(matchRatio * 1000) / 1000,
     matched_ingredients: matched,
     missing_ingredients: missing,
+    insufficient_ingredients: insufficient,
     uses_near_expiry: usesNearExpiry,
     near_expiry_ingredient_count: nearExpiryUsed.length,
     near_expiry_ingredients: nearExpiryUsed,
@@ -282,8 +346,8 @@ router.get("/recommended", async (req: Request, res: Response) => {
 
         return true;
       })
-      .map((r) => scoreRecipe(r, fridge.nameSet, fridge.nearExpirySet))
-      .filter((r) => r.match_count > 0);
+      .map((r) => scoreRecipe(r, fridge.itemMap))
+      .filter((r) => r.match_count + r.insufficient_ingredients.length > 0);
 
     scored.sort((a, b) => {
       if (a.uses_near_expiry !== b.uses_near_expiry) {

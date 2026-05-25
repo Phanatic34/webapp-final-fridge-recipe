@@ -32,6 +32,7 @@ export type RecipeRecommendation = {
   match_ratio: number;
   matched_ingredients: string[];
   missing_ingredients: string[];
+  insufficient_ingredients: string[];
   uses_near_expiry: boolean;
   near_expiry_ingredient_count: number;
   near_expiry_ingredients: string[];
