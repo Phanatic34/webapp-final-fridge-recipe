@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { pool } from "../db/pool.js";
 import { computeExpiryMeta } from "../utils/expiry.js";
 import { generateAiExplanation } from "../utils/llmExplanation.js";
+import { autoDetectAllergens } from "../utils/allergenMap.js";
 import type {
   RecipeRow,
   RecipeIngredientRow,
@@ -324,10 +325,11 @@ router.get("/recommended", async (req: Request, res: Response) => {
 
     const scored = recipes
       .filter((recipe) => {
-        // 1. Exclusion filter — skip recipes containing excluded ingredients
+        // 1. Exclusion filter — skip recipes containing excluded ingredients or their allergen tags
         if (exclusions.size > 0) {
           const hasExcluded = recipe.ingredientRows.some((ri) =>
-            exclusions.has(ri.name.toLowerCase())
+            exclusions.has(ri.name.toLowerCase()) ||
+            ri.allergens.some((a) => exclusions.has(a.toLowerCase()))
           );
           if (hasExcluded) return false;
         }
@@ -387,6 +389,17 @@ router.get("/recommended", async (req: Request, res: Response) => {
     console.error(e);
     res.status(500).json({ error: "Failed to compute recommendations" });
   }
+});
+
+/** POST /api/recipes/auto-allergens */
+router.post("/auto-allergens", async (req: Request, res: Response) => {
+  const { name } = req.body as { name?: unknown };
+  if (typeof name !== "string" || !name.trim()) {
+    res.status(400).json({ error: "name is required" });
+    return;
+  }
+  const result = await autoDetectAllergens(name.trim());
+  res.json(result);
 });
 
 /** POST /api/recipes */
@@ -455,13 +468,18 @@ router.post("/", async (req: Request, res: Response) => {
             ing.quantity !== undefined && ing.quantity !== "" && ing.quantity !== null
               ? Number(ing.quantity)
               : null;
+          const allergens =
+            Array.isArray(ing.allergens)
+              ? ing.allergens.filter((a: unknown) => typeof a === "string")
+              : [];
           await pool.query(
-            `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit) VALUES ($1, $2, $3, $4)`,
+            `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit, allergens) VALUES ($1, $2, $3, $4, $5)`,
             [
               recipe.id,
               ing.name.trim(),
               ingQty && !Number.isNaN(ingQty) ? ingQty : null,
               typeof ing.unit === "string" && ing.unit.trim() ? ing.unit.trim() : null,
+              allergens,
             ]
           );
         }

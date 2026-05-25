@@ -34,6 +34,7 @@ export type RecipeIngredientRow = {
   name: string;
   quantity: string | null;
   unit: string | null;
+  allergens: string[];
 };
 
 export type RecipeIngredient = {

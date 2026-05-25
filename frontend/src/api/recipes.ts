@@ -38,8 +38,18 @@ export type RecipeCreatePayload = {
   servings?: number;
   difficulty?: string;
   instructions?: string;
-  ingredients: { name: string; quantity?: number | null; unit?: string }[];
+  ingredients: { name: string; quantity?: number | null; unit?: string; allergens?: string[] }[];
 };
+
+export async function autoAllergens(
+  name: string
+): Promise<{ allergens: string[]; source: "known" | "ai" | "error" }> {
+  const { data } = await api.post<{ allergens: string[]; source: "known" | "ai" | "error" }>(
+    "/api/recipes/auto-allergens",
+    { name }
+  );
+  return data;
+}
 
 export async function createRecipe(payload: RecipeCreatePayload): Promise<Recipe> {
   const { data } = await api.post<{ recipe: Recipe }>("/api/recipes", payload);

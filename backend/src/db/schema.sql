@@ -113,6 +113,8 @@ CREATE TABLE IF NOT EXISTS recipe_ingredients (
   unit            VARCHAR(50)
 );
 
+ALTER TABLE recipe_ingredients ADD COLUMN IF NOT EXISTS allergens TEXT[] NOT NULL DEFAULT '{}';
+
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe ON recipe_ingredients(recipe_id);
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_name ON recipe_ingredients(LOWER(name));
 
