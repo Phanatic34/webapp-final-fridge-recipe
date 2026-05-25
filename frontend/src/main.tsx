@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -15,17 +15,31 @@ const queryClient = new QueryClient({
   },
 });
 
+const mq = window.matchMedia("(max-width: 639px)");
+
+function AppToaster() {
+  const [isMobile, setIsMobile] = useState(mq.matches);
+  useEffect(() => {
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return (
+    <Toaster
+      position={isMobile ? "top-left" : "top-center"}
+      richColors
+      closeButton
+      offset={12}
+    />
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <App />
-        <Toaster
-          position={window.matchMedia("(max-width: 639px)").matches ? "top-left" : "top-center"}
-          richColors
-          closeButton
-          offset={12}
-        />
+        <AppToaster />
       </QueryClientProvider>
     </BrowserRouter>
   </StrictMode>
