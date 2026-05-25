@@ -67,7 +67,7 @@ export function Layout({
               <button
                 type="button"
                 onClick={onAddClick}
-                className="rounded-lg border border-app-header-accent bg-app-header-cta px-3 py-1.5 text-xs font-medium text-app-primary shadow-sm transition hover:bg-app-header-cta-hover hover:text-app-header-cta-text-hover focus:outline-none focus:ring-2 focus:ring-app-header-accent focus:ring-offset-2 focus:ring-offset-app-header-bg sm:px-4 sm:text-sm"
+                className="hidden sm:block rounded-lg border border-app-header-accent bg-app-header-cta px-3 py-1.5 text-xs font-medium text-app-primary shadow-sm transition hover:bg-app-header-cta-hover hover:text-app-header-cta-text-hover focus:outline-none focus:ring-2 focus:ring-app-header-accent focus:ring-offset-2 focus:ring-offset-app-header-bg sm:px-4 sm:text-sm"
               >
                 新增食材
               </button>
