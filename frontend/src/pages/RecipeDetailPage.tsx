@@ -91,40 +91,6 @@ export default function RecipeDetailPage() {
           <span aria-hidden="true">&larr;</span> 返回食譜
         </Link>
 
-        {recipe && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-app-muted">
-              {isFavorited ? "已收藏" : "尚未收藏"}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                to={`/recipes/${recipeId}/edit`}
-                className="rounded-lg border border-app-border bg-white px-4 py-2 text-sm font-medium text-app-text hover:bg-app-surface focus:outline-none focus:ring-2 focus:ring-app-primary focus:ring-offset-2 transition"
-              >
-                編輯食譜
-              </Link>
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(true)}
-                className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-app-danger hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition"
-              >
-                刪除食譜
-              </button>
-              <button
-                type="button"
-                onClick={() => void toggleFavorite()}
-                disabled={addFav.isPending || removeFav.isPending}
-                className={
-                  isFavorited
-                    ? "rounded-lg border border-app-border bg-white px-4 py-2 text-sm font-medium text-app-text hover:bg-app-surface focus:outline-none focus:ring-2 focus:ring-app-primary focus:ring-offset-2 disabled:opacity-50"
-                    : "rounded-lg bg-app-primary px-4 py-2 text-sm font-medium text-white shadow hover:bg-app-primary-hover focus:outline-none focus:ring-2 focus:ring-app-primary focus:ring-offset-2 disabled:opacity-50"
-                }
-              >
-                {isFavorited ? "取消收藏" : "收藏"}
-              </button>
-            </div>
-          </div>
-        )}
 
         {isLoading && (
           <div className="space-y-4">
@@ -162,9 +128,48 @@ export default function RecipeDetailPage() {
             )}
 
             <div>
-              <h2 className="font-['Noto_Serif_TC'] text-2xl font-bold text-app-text">
-                {recipe.title}
-              </h2>
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="font-['Noto_Serif_TC'] text-2xl font-bold text-app-text flex items-center gap-2">
+                  {recipe.title}
+                  <button
+                    type="button"
+                    onClick={() => void toggleFavorite()}
+                    disabled={addFav.isPending || removeFav.isPending}
+                    aria-label={isFavorited ? "取消收藏" : "加入收藏"}
+                    className="shrink-0 rounded-full p-1 transition hover:scale-110 disabled:opacity-50 focus:outline-none"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      stroke={isFavorited ? "#f59e0b" : "currentColor"}
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fill={isFavorited ? "#f59e0b" : "none"}
+                      className={isFavorited ? "" : "text-app-muted"}
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </button>
+                </h2>
+                <div className="flex shrink-0 items-center gap-2 pt-1">
+                  <Link
+                    to={`/recipes/${recipeId}/edit`}
+                    className="rounded-lg border border-app-border bg-white px-3 py-1.5 text-sm font-medium text-app-text hover:bg-app-surface transition"
+                  >
+                    編輯
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-app-danger hover:bg-red-50 transition"
+                  >
+                    刪除
+                  </button>
+                </div>
+              </div>
               {recipe.description && (
                 <p className="mt-1 text-app-muted">{recipe.description}</p>
               )}
