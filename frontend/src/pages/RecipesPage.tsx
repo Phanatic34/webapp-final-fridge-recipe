@@ -193,19 +193,8 @@ export default function RecipesPage() {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-['Noto_Serif_TC'] text-lg font-semibold text-app-text">食譜</h2>
-              <Link
-                to="/recipes/new"
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-app-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-app-primary-hover transition"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="12" y1="4" x2="12" y2="20" /><line x1="4" y1="12" x2="20" y2="12" />
-                </svg>
-                建立食譜
-              </Link>
-            </div>
-            <div className="mt-2 flex gap-1">
+            <h2 className="font-['Noto_Serif_TC'] text-lg font-semibold text-app-text">食譜</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {(["recommended", "all"] as const).map((m) => (
                 <button
                   key={m}
@@ -220,6 +209,15 @@ export default function RecipesPage() {
                   {m === "recommended" ? "推薦食譜" : "全部食譜"}
                 </button>
               ))}
+              <Link
+                to="/recipes/new"
+                className="hidden sm:inline-flex items-center gap-1 rounded-lg bg-app-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-app-primary-hover transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="12" y1="4" x2="12" y2="20" /><line x1="4" y1="12" x2="20" y2="12" />
+                </svg>
+                建立食譜
+              </Link>
             </div>
           </div>
           <div className="flex flex-wrap items-end gap-3">
@@ -362,7 +360,6 @@ export default function RecipesPage() {
         )}
       </div>
 
-      {/* FAB — 建立食譜，手機版 */}
       <AnimatePresence>
         <motion.button
           type="button"
