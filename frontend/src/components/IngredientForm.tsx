@@ -88,8 +88,12 @@ export function IngredientForm({
         )}
       </div>
 
+      <p className="text-xs text-app-muted">請至少填寫以下其中一項數量。</p>
+
       <section className="rounded-xl border border-app-border bg-app-surface/70 p-3">
-        <h3 className="text-sm font-semibold text-app-text">個數</h3>
+        <h3 className="text-sm font-semibold text-app-text">
+          個數 <span className="ml-1 font-normal text-app-muted">（選填）</span>
+        </h3>
         <p className="mt-0.5 text-xs text-app-muted">
           例如：5 根小黃瓜、3 顆番茄、2 包豆腐
         </p>
@@ -108,7 +112,7 @@ export function IngredientForm({
               min="0"
               className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
               {...form.register("count_quantity", {
-                setValueAs: (value) => (value === "" ? null : Number(value)),
+                setValueAs: (value) => (value === "" || value === null || value === undefined ? null : Number(value)),
               })}
             />
             {form.formState.errors.count_quantity && (
@@ -145,8 +149,16 @@ export function IngredientForm({
         </div>
       </section>
 
+      <div className="flex items-center gap-2">
+        <div className="h-px flex-1 bg-app-border" />
+        <span className="text-xs text-app-muted">或</span>
+        <div className="h-px flex-1 bg-app-border" />
+      </div>
+
       <section className="rounded-xl border border-app-border bg-app-surface/70 p-3">
-        <h3 className="text-sm font-semibold text-app-text">重量／容量</h3>
+        <h3 className="text-sm font-semibold text-app-text">
+          重量／容量 <span className="ml-1 font-normal text-app-muted">（選填）</span>
+        </h3>
         <p className="mt-0.5 text-xs text-app-muted">
           例如：100 g、1 kg、500 ml、1 L
         </p>
@@ -165,7 +177,7 @@ export function IngredientForm({
               min="0"
               className="mt-1 w-full rounded-lg border border-app-border px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
               {...form.register("measure_quantity", {
-                setValueAs: (value) => (value === "" ? null : Number(value)),
+                setValueAs: (value) => (value === "" || value === null || value === undefined ? null : Number(value)),
               })}
             />
             {form.formState.errors.measure_quantity && (
