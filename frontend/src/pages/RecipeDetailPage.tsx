@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Layout } from "../components/Layout";
-import { useRecipeDetail, useRecommendedRecipesList } from "../hooks/useRecipes";
+import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
+import { useRecipeDetail, useRecommendedRecipesList, useDeleteRecipe } from "../hooks/useRecipes";
 import { useIngredientsList } from "../hooks/useIngredients";
 import { useAddFavorite, useFavoritesList, useRemoveFavorite } from "../hooks/useFavorites";
 import { useAddFromRecipe } from "../hooks/useShoppingList";
@@ -12,6 +13,9 @@ import { CUISINE_LABELS, DIFFICULTY_LABELS } from "../utils/labels";
 export default function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const recipeId = Number(id);
+  const navigate = useNavigate();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const deleteRecipe = useDeleteRecipe();
 
   const { data: recipe, isLoading, isError, error } = useRecipeDetail(
     Number.isNaN(recipeId) ? 0 : recipeId
@@ -48,6 +52,16 @@ export default function RecipeDetailPage() {
     [recipe, fridgeByName]
   );
 
+  async function handleDelete() {
+    try {
+      await deleteRecipe.mutateAsync(recipeId);
+      toast.success("食譜已刪除");
+      navigate("/recipes");
+    } catch {
+      toast.error("刪除食譜失敗");
+    }
+  }
+
   async function toggleFavorite() {
     if (!recipe) return;
     try {
@@ -82,18 +96,33 @@ export default function RecipeDetailPage() {
             <div className="text-sm text-app-muted">
               {isFavorited ? "已收藏" : "尚未收藏"}
             </div>
-            <button
-              type="button"
-              onClick={() => void toggleFavorite()}
-              disabled={addFav.isPending || removeFav.isPending}
-              className={
-                isFavorited
-                  ? "rounded-lg border border-app-border bg-white px-4 py-2 text-sm font-medium text-app-text hover:bg-app-surface focus:outline-none focus:ring-2 focus:ring-app-primary focus:ring-offset-2 disabled:opacity-50"
-                  : "rounded-lg bg-app-primary px-4 py-2 text-sm font-medium text-white shadow hover:bg-app-primary-hover focus:outline-none focus:ring-2 focus:ring-app-primary focus:ring-offset-2 disabled:opacity-50"
-              }
-            >
-              {isFavorited ? "取消收藏" : "收藏"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to={`/recipes/${recipeId}/edit`}
+                className="rounded-lg border border-app-border bg-white px-4 py-2 text-sm font-medium text-app-text hover:bg-app-surface focus:outline-none focus:ring-2 focus:ring-app-primary focus:ring-offset-2 transition"
+              >
+                編輯食譜
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-app-danger hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition"
+              >
+                刪除食譜
+              </button>
+              <button
+                type="button"
+                onClick={() => void toggleFavorite()}
+                disabled={addFav.isPending || removeFav.isPending}
+                className={
+                  isFavorited
+                    ? "rounded-lg border border-app-border bg-white px-4 py-2 text-sm font-medium text-app-text hover:bg-app-surface focus:outline-none focus:ring-2 focus:ring-app-primary focus:ring-offset-2 disabled:opacity-50"
+                    : "rounded-lg bg-app-primary px-4 py-2 text-sm font-medium text-white shadow hover:bg-app-primary-hover focus:outline-none focus:ring-2 focus:ring-app-primary focus:ring-offset-2 disabled:opacity-50"
+                }
+              >
+                {isFavorited ? "取消收藏" : "收藏"}
+              </button>
+            </div>
           </div>
         )}
 
@@ -352,6 +381,15 @@ export default function RecipeDetailPage() {
           </>
         )}
       </div>
+
+      <DeleteConfirmModal
+        open={showDeleteModal}
+        title="刪除食譜"
+        message={`確定要刪除「${recipe?.title ?? ""}」嗎？此操作無法復原。`}
+        loading={deleteRecipe.isPending}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </Layout>
   );
 }

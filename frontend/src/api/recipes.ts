@@ -56,6 +56,15 @@ export async function createRecipe(payload: RecipeCreatePayload): Promise<Recipe
   return data.recipe;
 }
 
+export async function updateRecipe(id: number, payload: RecipeCreatePayload): Promise<Recipe> {
+  const { data } = await api.put<{ recipe: Recipe }>(`/api/recipes/${id}`, payload);
+  return data.recipe;
+}
+
+export async function deleteRecipe(id: number): Promise<void> {
+  await api.delete(`/api/recipes/${id}`);
+}
+
 export async function fetchRecommendedRecipes(
   params: RecommendedParams = {}
 ): Promise<{ recommendations: RecipeRecommendation[] }> {

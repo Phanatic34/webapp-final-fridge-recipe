@@ -3,6 +3,7 @@ export type RecipeIngredient = {
   name: string;
   quantity: number | null;
   unit: string | null;
+  allergens: string[];
 };
 
 export type Recipe = {

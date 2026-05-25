@@ -39,6 +39,7 @@ function ingredientRowToResponse(row: RecipeIngredientRow): RecipeIngredient {
     name: row.name,
     quantity: qty !== null && Number.isFinite(qty) ? qty : null,
     unit: row.unit,
+    allergens: row.allergens ?? [],
   };
 }
 
@@ -490,6 +491,84 @@ router.post("/", async (req: Request, res: Response) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Failed to create recipe" });
+  }
+});
+
+/** PUT /api/recipes/:id */
+router.put("/:id", async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const { title, description, cuisine, cooking_time, servings, difficulty, instructions, ingredients } = req.body as {
+    title?: unknown; description?: unknown; cuisine?: unknown;
+    cooking_time?: unknown; servings?: unknown; difficulty?: unknown;
+    instructions?: unknown; ingredients?: unknown;
+  };
+
+  if (typeof title !== "string" || !title.trim()) {
+    res.status(400).json({ error: "title is required" }); return;
+  }
+
+  const cookingTime = cooking_time !== undefined && cooking_time !== "" && cooking_time !== null ? Number(cooking_time) : null;
+  const servingsNum = servings !== undefined && servings !== "" && servings !== null ? Number(servings) : 2;
+
+  try {
+    const result = await pool.query<RecipeRow>(
+      `UPDATE recipes SET title=$1, description=$2, cuisine=$3, cooking_time=$4, servings=$5,
+       difficulty=$6, instructions=$7, updated_at=NOW() WHERE id=$8 RETURNING *`,
+      [
+        title.trim(),
+        typeof description === "string" && description.trim() ? description.trim() : null,
+        typeof cuisine === "string" && cuisine.trim() ? cuisine.trim() : null,
+        cookingTime && !Number.isNaN(cookingTime) ? cookingTime : null,
+        servingsNum && !Number.isNaN(servingsNum) ? servingsNum : 2,
+        typeof difficulty === "string" && difficulty.trim() ? difficulty.trim() : "medium",
+        typeof instructions === "string" && instructions.trim() ? instructions.trim() : null,
+        id,
+      ]
+    );
+
+    if (result.rowCount === 0) { res.status(404).json({ error: "Recipe not found" }); return; }
+
+    await pool.query("DELETE FROM recipe_ingredients WHERE recipe_id = $1", [id]);
+
+    if (Array.isArray(ingredients)) {
+      for (const ing of ingredients) {
+        if (ing && typeof ing === "object" && typeof ing.name === "string" && ing.name.trim()) {
+          const ingQty = ing.quantity !== undefined && ing.quantity !== "" && ing.quantity !== null ? Number(ing.quantity) : null;
+          const allergens = Array.isArray(ing.allergens) ? ing.allergens.filter((a: unknown) => typeof a === "string") : [];
+          await pool.query(
+            `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit, allergens) VALUES ($1, $2, $3, $4, $5)`,
+            [
+              id,
+              ing.name.trim(),
+              ingQty && !Number.isNaN(ingQty) ? ingQty : null,
+              typeof ing.unit === "string" && ing.unit.trim() ? ing.unit.trim() : null,
+              allergens,
+            ]
+          );
+        }
+      }
+    }
+
+    res.json({ recipe: rowToResponse(result.rows[0]) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to update recipe" });
+  }
+});
+
+/** DELETE /api/recipes/:id */
+router.delete("/:id", async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  try {
+    const result = await pool.query("DELETE FROM recipes WHERE id = $1 RETURNING id", [id]);
+    if (result.rowCount === 0) { res.status(404).json({ error: "Recipe not found" }); return; }
+    res.status(204).send();
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to delete recipe" });
   }
 });
 

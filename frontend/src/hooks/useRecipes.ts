@@ -4,6 +4,8 @@ import {
   fetchRecipe,
   fetchRecommendedRecipes,
   createRecipe,
+  updateRecipe,
+  deleteRecipe,
   type RecipeListParams,
   type RecommendedParams,
   type RecipeCreatePayload,
@@ -29,6 +31,26 @@ export function useCreateRecipe() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: RecipeCreatePayload) => createRecipe(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["recipes"] }),
+  });
+}
+
+export function useUpdateRecipe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: RecipeCreatePayload }) =>
+      updateRecipe(id, payload),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ["recipes"] });
+      qc.invalidateQueries({ queryKey: ["recipes", id] });
+    },
+  });
+}
+
+export function useDeleteRecipe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteRecipe(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["recipes"] }),
   });
 }
