@@ -243,7 +243,7 @@ router.get("/recommended", async (req: Request, res: Response) => {
   if (req.query.max_time != null) {
     maxTime = Number.parseInt(req.query.max_time as string, 10);
     if (Number.isNaN(maxTime) || maxTime <= 0) {
-      res.status(400).json({ error: "max_time must be a positive integer" });
+      res.status(400).json({ error: "max_time 必須為正整數" });
       return;
     }
   }
@@ -321,7 +321,7 @@ router.get("/recommended", async (req: Request, res: Response) => {
     res.json({ recommendations: withAiExplanations });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to compute recommendations" });
+    res.status(500).json({ error: "無法計算推薦食譜" });
   }
 });
 
@@ -345,7 +345,7 @@ router.get("/", async (req: Request, res: Response) => {
     res.json({ recipes: result.rows.map(rowToResponse) });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to list recipes" });
+    res.status(500).json({ error: "無法取得食譜清單" });
   }
 });
 
@@ -353,7 +353,7 @@ router.get("/", async (req: Request, res: Response) => {
 router.get("/:id", async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
+    res.status(400).json({ error: "無效的 ID" });
     return;
   }
 
@@ -364,7 +364,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     );
 
     if (recipeResult.rows.length === 0) {
-      res.status(404).json({ error: "Recipe not found" });
+      res.status(404).json({ error: "找不到該食譜" });
       return;
     }
 
@@ -384,7 +384,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     res.json({ recipe: detail });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to fetch recipe" });
+    res.status(500).json({ error: "無法取得食譜" });
   }
 });
 

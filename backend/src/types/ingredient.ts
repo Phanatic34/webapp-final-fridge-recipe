@@ -118,7 +118,7 @@ function validateQuantityPairs(
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["count_quantity"],
-      message: "Provide either count quantity or measurement quantity",
+      message: "請提供數量或重量／體積其中一種",
     });
   }
 }
