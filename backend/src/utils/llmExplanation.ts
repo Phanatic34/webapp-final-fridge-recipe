@@ -1,6 +1,9 @@
 import OpenAI from "openai";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let client: OpenAI | null = null;
+if (process.env.OPENAI_API_KEY) {
+  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 export interface ExplanationInput {
   recipeName: string;
@@ -60,6 +63,8 @@ export async function generateAiExplanation(
 即將過期的食材：${nearExpiryIngredients.join("、") || "無"}
 匹配率：${Math.round(matchRatio * 100)}%
 推薦理由：`;
+
+  if (!client) return "";
 
   const response = await client.chat.completions.create({
     model: "gpt-5.4-mini",
