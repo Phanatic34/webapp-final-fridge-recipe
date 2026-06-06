@@ -179,6 +179,32 @@ router.post(
     }
 
     try {
+      const existing = await pool.query<IngredientRow>(
+        `SELECT * FROM ingredients
+         WHERE user_id = $1
+           AND LOWER(name) = LOWER($2)
+           AND status = $3
+           AND (expiry_date IS NOT DISTINCT FROM $4::date)
+           AND (count_unit IS NOT DISTINCT FROM $5)
+           AND (measure_unit IS NOT DISTINCT FROM $6)
+         LIMIT 1`,
+        [req.userId, body.name, status, expiry, quantities.count_unit, quantities.measure_unit]
+      );
+
+      if (existing.rows.length > 0) {
+        const merged = await pool.query<IngredientRow>(
+          `UPDATE ingredients SET
+             count_quantity = count_quantity + $1,
+             measure_quantity = measure_quantity + $2,
+             updated_at = NOW()
+           WHERE id = $3
+           RETURNING *`,
+          [quantities.count_quantity, quantities.measure_quantity, existing.rows[0].id]
+        );
+        res.status(200).json({ ingredient: rowToResponse(merged.rows[0]) });
+        return;
+      }
+
       const result = await pool.query<IngredientRow>(
         `INSERT INTO ingredients (
           user_id, name, count_quantity, count_unit, measure_quantity, measure_unit,
