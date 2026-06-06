@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { pool } from "../db/pool.js";
 import { computeExpiryMeta } from "../utils/expiry.js";
 import { generateAiExplanation } from "../utils/llmExplanation.js";
+import { autoDetectAllergens } from "../utils/allergenMap.js";
 import type {
   RecipeRow,
   RecipeIngredientRow,
@@ -14,7 +15,6 @@ import type {
 
 const router = Router();
 
-const DEFAULT_USER_ID = 1;
 
 function rowToResponse(row: RecipeRow): RecipeResponse {
   return {
@@ -38,54 +38,114 @@ function ingredientRowToResponse(row: RecipeIngredientRow): RecipeIngredient {
     name: row.name,
     quantity: qty !== null && Number.isFinite(qty) ? qty : null,
     unit: row.unit,
+    allergens: row.allergens ?? [],
   };
 }
 
 // ─── Recommendation helpers ────────────────────────────────────
 
-type FridgeItem = {
-  name: string;
+type FridgeQuantity = {
   is_near_expiry: boolean;
+  count_qty: number | null;
+  count_unit: string | null;
+  measure_qty: number | null;
+  measure_unit: string | null;
 };
 
-/**
- * Build a Set of lowercase ingredient names currently in the fridge,
- * plus a Set of those that are near-expiry.
- */
-async function loadFridge(userId: number) {
-  // TODO: Recommendation matching currently checks ingredient names only.
-  // Future scoring should compare required recipe quantities against available
-  // count_quantity/measure_quantity with unit conversion where safe.
+async function loadFridge(userId: string) {
   const { rows } = await pool.query<{
     name: string;
     expiry_date: string | Date | null;
+    count_quantity: string | null;
+    count_unit: string | null;
+    measure_quantity: string | null;
+    measure_unit: string | null;
   }>(
-    `SELECT name, expiry_date FROM ingredients WHERE user_id = $1`,
+    `SELECT name, expiry_date, count_quantity, count_unit, measure_quantity, measure_unit
+     FROM ingredients WHERE user_id = $1`,
     [userId]
   );
 
-  const items: FridgeItem[] = rows.map((r) => {
+  const itemMap = new Map<string, FridgeQuantity>();
+  for (const r of rows) {
     const meta = computeExpiryMeta(r.expiry_date);
-    return { name: r.name, is_near_expiry: meta.is_near_expiry };
-  });
+    itemMap.set(r.name.toLowerCase(), {
+      is_near_expiry: meta.is_near_expiry,
+      count_qty: r.count_quantity !== null ? Number.parseFloat(r.count_quantity) : null,
+      count_unit: r.count_unit,
+      measure_qty: r.measure_quantity !== null ? Number.parseFloat(r.measure_quantity) : null,
+      measure_unit: r.measure_unit,
+    });
+  }
 
-  const nameSet = new Set(items.map((i) => i.name.toLowerCase()));
-  const nearExpirySet = new Set(
-    items.filter((i) => i.is_near_expiry).map((i) => i.name.toLowerCase())
-  );
+  return { itemMap };
+}
 
-  return { nameSet, nearExpirySet };
+function toGrams(qty: number, unit: string): number | null {
+  switch (unit.toLowerCase().trim()) {
+    case "g":  return qty;
+    case "kg": return qty * 1000;
+    default:   return null;
+  }
+}
+
+function toMl(qty: number, unit: string): number | null {
+  switch (unit.toLowerCase().trim()) {
+    case "ml": return qty;
+    case "l":  return qty * 1000;
+    default:   return null;
+  }
+}
+
+const COUNT_CANONICAL: Record<string, string> = {
+  pieces: "pieces", "個": "pieces", pcs: "pieces", pc: "pieces",
+  packs: "packs",   "包": "packs",  pack: "packs",
+};
+
+function isSufficientQty(
+  fridge: FridgeQuantity,
+  recipeQty: number | null,
+  recipeUnit: string | null
+): boolean {
+  if (recipeQty === null || recipeUnit === null) return true;
+
+  const rUnit = recipeUnit.toLowerCase().trim();
+
+  // Weight comparison (g / kg)
+  const rGrams = toGrams(recipeQty, rUnit);
+  if (rGrams !== null && fridge.measure_qty !== null && fridge.measure_unit !== null) {
+    const fGrams = toGrams(fridge.measure_qty, fridge.measure_unit);
+    if (fGrams !== null) return fGrams >= rGrams;
+  }
+
+  // Volume comparison (ml / L)
+  const rMl = toMl(recipeQty, rUnit);
+  if (rMl !== null && fridge.measure_qty !== null && fridge.measure_unit !== null) {
+    const fMl = toMl(fridge.measure_qty, fridge.measure_unit);
+    if (fMl !== null) return fMl >= rMl;
+  }
+
+  // Count comparison (pieces / 個 / packs / 包)
+  const rCanon = COUNT_CANONICAL[rUnit];
+  if (rCanon !== undefined && fridge.count_qty !== null && fridge.count_unit !== null) {
+    const fCanon = COUNT_CANONICAL[fridge.count_unit.toLowerCase().trim()];
+    if (fCanon === rCanon) return fridge.count_qty >= recipeQty;
+  }
+
+  // Incompatible or unknown units (tbsp, tsp, …) → name match is enough
+  return true;
 }
 
 type RecipeWithIngredients = RecipeRow & {
   ingredientRows: RecipeIngredientRow[];
 };
 
-async function loadAllRecipesWithIngredients(): Promise<
+async function loadAllRecipesWithIngredients(userId: string): Promise<
   RecipeWithIngredients[]
 > {
   const recipesResult = await pool.query<RecipeRow>(
-    `SELECT * FROM recipes ORDER BY title`
+    `SELECT * FROM recipes WHERE user_id = $1 ORDER BY title`,
+    [userId]
   );
 
   const riResult = await pool.query<RecipeIngredientRow>(
@@ -116,7 +176,7 @@ const ALLERGEN_ALIASES: Record<string, string[]> = {
   "海鮮": ["蝦", "蝦仁", "草蝦", "龍蝦", "蟹", "螃蟹", "魚", "鮭魚", "鮪魚", "鯖魚", "鱈魚", "花枝", "魷魚", "章魚", "蛤蜊", "蚵仔", "牡蠣", "干貝", "shrimp", "shrimps", "prawn", "prawns", "crab", "lobster", "fish", "salmon", "tuna", "squid", "oyster", "clam", "scallop", "seafood"],
 };
 
-async function loadExclusions(userId: number): Promise<Set<string>> {
+async function loadExclusions(userId: string): Promise<Set<string>> {
   const { rows } = await pool.query<{ name: string }>(
     "SELECT LOWER(name) AS name FROM user_exclusions WHERE user_id = $1",
     [userId]
@@ -131,7 +191,7 @@ async function loadExclusions(userId: number): Promise<Set<string>> {
   return set;
 }
 
-async function loadUserEquipment(userId: number): Promise<Set<string>> {
+async function loadUserEquipment(userId: string): Promise<Set<string>> {
   const { rows } = await pool.query<{ equipment_name: string }>(
     "SELECT equipment_name FROM user_equipment WHERE user_id = $1",
     [userId]
@@ -156,29 +216,33 @@ async function loadRecipeEquipmentMap(): Promise<Map<number, string[]>> {
  * Score one recipe against the fridge.
  *
  * Ranking formula (higher = better):
- *   score = match_ratio                        (0.0 – 1.0)
- *         + 0.15  if any matched ingredient is near-expiry
- *         - 0.05 * missing_count               (penalty per missing item)
+ *   score = match_ratio                        (0.0 – 1.0, sufficient matches only)
+ *         + 0.15  if any sufficient-matched ingredient is near-expiry
+ *         - 0.05 * (missing_count + insufficient_count)
  *
- * match_ratio alone is the primary factor (what % of ingredients you have).
- * The near-expiry bonus nudges recipes that help use up expiring food.
- * The missing-count penalty breaks ties between equal-ratio recipes.
+ * "insufficient" = ingredient exists in fridge but quantity is below what the recipe needs.
+ * Insufficient items are excluded from match_ratio but keep the recipe visible in results.
  */
 function scoreRecipe(
   recipe: RecipeWithIngredients,
-  fridgeNames: Set<string>,
-  nearExpiryNames: Set<string>
+  itemMap: Map<string, FridgeQuantity>
 ): RecommendationResponse {
   const matched: string[] = [];
+  const insufficient: string[] = [];
   const missing: string[] = [];
   const nearExpiryUsed: string[] = [];
 
   for (const ri of recipe.ingredientRows) {
     const lower = ri.name.toLowerCase();
-    if (fridgeNames.has(lower)) {
-      matched.push(ri.name);
-      if (nearExpiryNames.has(lower)) {
-        nearExpiryUsed.push(ri.name);
+    const fridgeItem = itemMap.get(lower);
+
+    if (fridgeItem) {
+      const recipeQty = ri.quantity !== null ? Number.parseFloat(String(ri.quantity)) : null;
+      if (isSufficientQty(fridgeItem, recipeQty, ri.unit)) {
+        matched.push(ri.name);
+        if (fridgeItem.is_near_expiry) nearExpiryUsed.push(ri.name);
+      } else {
+        insufficient.push(ri.name);
       }
     } else {
       missing.push(ri.name);
@@ -188,6 +252,7 @@ function scoreRecipe(
   const total = recipe.ingredientRows.length;
   const matchRatio = total > 0 ? matched.length / total : 0;
   const usesNearExpiry = nearExpiryUsed.length > 0;
+  const effectiveMissingCount = missing.length + insufficient.length;
 
   const explanation: string[] = [];
 
@@ -196,15 +261,15 @@ function scoreRecipe(
   } else if (matched.length === total) {
     explanation.push("你已擁有所有所需食材！");
   } else {
-    explanation.push(
-      `你已擁有 ${matched.length} / ${total} 項所需食材。`
-    );
+    explanation.push(`你已擁有 ${matched.length} / ${total} 項所需食材。`);
   }
 
   if (usesNearExpiry) {
-    explanation.push(
-      `可消耗即將到期食材：${nearExpiryUsed.join("、")}。`
-    );
+    explanation.push(`可消耗即將到期食材：${nearExpiryUsed.join("、")}。`);
+  }
+
+  if (insufficient.length > 0) {
+    explanation.push(`以下食材數量不足：${insufficient.join("、")}。`);
   }
 
   if (missing.length > 0 && missing.length <= 3) {
@@ -218,10 +283,11 @@ function scoreRecipe(
     ingredients: recipe.ingredientRows.map(ingredientRowToResponse),
     match_count: matched.length,
     total_ingredients: total,
-    missing_count: missing.length,
+    missing_count: effectiveMissingCount,
     match_ratio: Math.round(matchRatio * 1000) / 1000,
     matched_ingredients: matched,
     missing_ingredients: missing,
+    insufficient_ingredients: insufficient,
     uses_near_expiry: usesNearExpiry,
     near_expiry_ingredient_count: nearExpiryUsed.length,
     near_expiry_ingredients: nearExpiryUsed,
@@ -251,19 +317,20 @@ router.get("/recommended", async (req: Request, res: Response) => {
   try {
     const [fridge, recipes, exclusions, userEquipment, recipeEquipmentMap] =
       await Promise.all([
-        loadFridge(DEFAULT_USER_ID),
-        loadAllRecipesWithIngredients(),
-        loadExclusions(DEFAULT_USER_ID),
-        loadUserEquipment(DEFAULT_USER_ID),
+        loadFridge(req.userId),
+        loadAllRecipesWithIngredients(req.userId),
+        loadExclusions(req.userId),
+        loadUserEquipment(req.userId),
         loadRecipeEquipmentMap(),
       ]);
 
     const scored = recipes
       .filter((recipe) => {
-        // 1. Exclusion filter — skip recipes containing excluded ingredients
+        // 1. Exclusion filter — skip recipes containing excluded ingredients or their allergen tags
         if (exclusions.size > 0) {
           const hasExcluded = recipe.ingredientRows.some((ri) =>
-            exclusions.has(ri.name.toLowerCase())
+            exclusions.has(ri.name.toLowerCase()) ||
+            ri.allergens.some((a) => exclusions.has(a.toLowerCase()))
           );
           if (hasExcluded) return false;
         }
@@ -282,8 +349,8 @@ router.get("/recommended", async (req: Request, res: Response) => {
 
         return true;
       })
-      .map((r) => scoreRecipe(r, fridge.nameSet, fridge.nearExpirySet))
-      .filter((r) => r.match_count > 0);
+      .map((r) => scoreRecipe(r, fridge.itemMap))
+      .filter((r) => r.match_count + r.insufficient_ingredients.length > 0);
 
     scored.sort((a, b) => {
       if (a.uses_near_expiry !== b.uses_near_expiry) {
@@ -325,16 +392,198 @@ router.get("/recommended", async (req: Request, res: Response) => {
   }
 });
 
+/** POST /api/recipes/auto-allergens */
+router.post("/auto-allergens", async (req: Request, res: Response) => {
+  const { name } = req.body as { name?: unknown };
+  if (typeof name !== "string" || !name.trim()) {
+    res.status(400).json({ error: "name is required" });
+    return;
+  }
+  const result = await autoDetectAllergens(name.trim());
+  res.json(result);
+});
+
+/** POST /api/recipes */
+router.post("/", async (req: Request, res: Response) => {
+  const {
+    title,
+    description,
+    cuisine,
+    cooking_time,
+    servings,
+    difficulty,
+    instructions,
+    ingredients,
+  } = req.body as {
+    title?: unknown;
+    description?: unknown;
+    cuisine?: unknown;
+    cooking_time?: unknown;
+    servings?: unknown;
+    difficulty?: unknown;
+    instructions?: unknown;
+    ingredients?: unknown;
+  };
+
+  if (typeof title !== "string" || !title.trim()) {
+    res.status(400).json({ error: "title is required" });
+    return;
+  }
+
+  const cookingTime =
+    cooking_time !== undefined && cooking_time !== "" && cooking_time !== null
+      ? Number(cooking_time)
+      : null;
+  const servingsNum =
+    servings !== undefined && servings !== "" && servings !== null
+      ? Number(servings)
+      : 2;
+
+  try {
+    const recipeResult = await pool.query<RecipeRow>(
+      `INSERT INTO recipes (user_id, title, description, cuisine, cooking_time, servings, difficulty, instructions)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [
+        req.userId,
+        title.trim(),
+        typeof description === "string" && description.trim() ? description.trim() : null,
+        typeof cuisine === "string" && cuisine.trim() ? cuisine.trim() : null,
+        cookingTime && !Number.isNaN(cookingTime) ? cookingTime : null,
+        servingsNum && !Number.isNaN(servingsNum) ? servingsNum : 2,
+        typeof difficulty === "string" && difficulty.trim() ? difficulty.trim() : "medium",
+        typeof instructions === "string" && instructions.trim() ? instructions.trim() : null,
+      ]
+    );
+
+    const recipe = recipeResult.rows[0];
+
+    if (Array.isArray(ingredients)) {
+      for (const ing of ingredients) {
+        if (
+          ing &&
+          typeof ing === "object" &&
+          typeof ing.name === "string" &&
+          ing.name.trim()
+        ) {
+          const ingQty =
+            ing.quantity !== undefined && ing.quantity !== "" && ing.quantity !== null
+              ? Number(ing.quantity)
+              : null;
+          const allergens =
+            Array.isArray(ing.allergens)
+              ? ing.allergens.filter((a: unknown) => typeof a === "string")
+              : [];
+          await pool.query(
+            `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit, allergens) VALUES ($1, $2, $3, $4, $5)`,
+            [
+              recipe.id,
+              ing.name.trim(),
+              ingQty && !Number.isNaN(ingQty) ? ingQty : null,
+              typeof ing.unit === "string" && ing.unit.trim() ? ing.unit.trim() : null,
+              allergens,
+            ]
+          );
+        }
+      }
+    }
+
+    res.status(201).json({ recipe: rowToResponse(recipe) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to create recipe" });
+  }
+});
+
+/** PUT /api/recipes/:id */
+router.put("/:id", async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const { title, description, cuisine, cooking_time, servings, difficulty, instructions, ingredients } = req.body as {
+    title?: unknown; description?: unknown; cuisine?: unknown;
+    cooking_time?: unknown; servings?: unknown; difficulty?: unknown;
+    instructions?: unknown; ingredients?: unknown;
+  };
+
+  if (typeof title !== "string" || !title.trim()) {
+    res.status(400).json({ error: "title is required" }); return;
+  }
+
+  const cookingTime = cooking_time !== undefined && cooking_time !== "" && cooking_time !== null ? Number(cooking_time) : null;
+  const servingsNum = servings !== undefined && servings !== "" && servings !== null ? Number(servings) : 2;
+
+  try {
+    const result = await pool.query<RecipeRow>(
+      `UPDATE recipes SET title=$1, description=$2, cuisine=$3, cooking_time=$4, servings=$5,
+       difficulty=$6, instructions=$7, updated_at=NOW() WHERE id=$8 AND user_id=$9 RETURNING *`,
+      [
+        title.trim(),
+        typeof description === "string" && description.trim() ? description.trim() : null,
+        typeof cuisine === "string" && cuisine.trim() ? cuisine.trim() : null,
+        cookingTime && !Number.isNaN(cookingTime) ? cookingTime : null,
+        servingsNum && !Number.isNaN(servingsNum) ? servingsNum : 2,
+        typeof difficulty === "string" && difficulty.trim() ? difficulty.trim() : "medium",
+        typeof instructions === "string" && instructions.trim() ? instructions.trim() : null,
+        id,
+        req.userId,
+      ]
+    );
+
+    if (result.rowCount === 0) { res.status(404).json({ error: "Recipe not found" }); return; }
+
+    await pool.query("DELETE FROM recipe_ingredients WHERE recipe_id = $1", [id]);
+
+    if (Array.isArray(ingredients)) {
+      for (const ing of ingredients) {
+        if (ing && typeof ing === "object" && typeof ing.name === "string" && ing.name.trim()) {
+          const ingQty = ing.quantity !== undefined && ing.quantity !== "" && ing.quantity !== null ? Number(ing.quantity) : null;
+          const allergens = Array.isArray(ing.allergens) ? ing.allergens.filter((a: unknown) => typeof a === "string") : [];
+          await pool.query(
+            `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit, allergens) VALUES ($1, $2, $3, $4, $5)`,
+            [
+              id,
+              ing.name.trim(),
+              ingQty && !Number.isNaN(ingQty) ? ingQty : null,
+              typeof ing.unit === "string" && ing.unit.trim() ? ing.unit.trim() : null,
+              allergens,
+            ]
+          );
+        }
+      }
+    }
+
+    res.json({ recipe: rowToResponse(result.rows[0]) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to update recipe" });
+  }
+});
+
+/** DELETE /api/recipes/:id */
+router.delete("/:id", async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  try {
+    const result = await pool.query("DELETE FROM recipes WHERE id = $1 AND user_id = $2 RETURNING id", [id, req.userId]);
+    if (result.rowCount === 0) { res.status(404).json({ error: "Recipe not found" }); return; }
+    res.status(204).send();
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to delete recipe" });
+  }
+});
+
 /** GET /api/recipes?cuisine= */
 router.get("/", async (req: Request, res: Response) => {
   try {
     const cuisine = req.query.cuisine as string | undefined;
 
-    const params: unknown[] = [];
-    let where = "";
+    const params: unknown[] = [req.userId];
+    let where = "WHERE r.user_id = $1";
     if (cuisine && cuisine !== "all") {
       params.push(cuisine);
-      where = `WHERE LOWER(r.cuisine) = LOWER($${params.length})`;
+      where += ` AND LOWER(r.cuisine) = LOWER($${params.length})`;
     }
 
     const result = await pool.query<RecipeRow>(
@@ -359,8 +608,8 @@ router.get("/:id", async (req: Request, res: Response) => {
 
   try {
     const recipeResult = await pool.query<RecipeRow>(
-      `SELECT * FROM recipes WHERE id = $1`,
-      [id]
+      `SELECT * FROM recipes WHERE id = $1 AND user_id = $2`,
+      [id, req.userId]
     );
 
     if (recipeResult.rows.length === 0) {

@@ -5,7 +5,7 @@ import type { RecipeRow, RecipeResponse } from "../types/recipe.js";
 
 const router = Router();
 
-const DEFAULT_USER_ID = 1;
+
 
 function rowToResponse(row: RecipeRow): RecipeResponse {
   return {
@@ -23,7 +23,7 @@ function rowToResponse(row: RecipeRow): RecipeResponse {
 }
 
 /** GET /api/favorites */
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const result = await pool.query<RecipeRow>(
       `SELECT r.*
@@ -31,7 +31,7 @@ router.get("/", async (_req: Request, res: Response) => {
        JOIN recipes r ON r.id = f.recipe_id
        WHERE f.user_id = $1
        ORDER BY f.created_at DESC`,
-      [DEFAULT_USER_ID]
+      [req.userId]
     );
 
     res.json({ recipes: result.rows.map(rowToResponse) });
@@ -51,8 +51,8 @@ router.post("/:recipeId", async (req: Request, res: Response) => {
 
   try {
     const recipeResult = await pool.query<RecipeRow>(
-      `SELECT * FROM recipes WHERE id = $1`,
-      [recipeId]
+      `SELECT * FROM recipes WHERE id = $1 AND user_id = $2`,
+      [recipeId, req.userId]
     );
 
     if (recipeResult.rows.length === 0) {
@@ -64,7 +64,7 @@ router.post("/:recipeId", async (req: Request, res: Response) => {
       `INSERT INTO favorites (user_id, recipe_id)
        VALUES ($1, $2)
        ON CONFLICT (user_id, recipe_id) DO NOTHING`,
-      [DEFAULT_USER_ID, recipeId]
+      [req.userId, recipeId]
     );
 
     res.status(201).json({ recipe: rowToResponse(recipeResult.rows[0]) });
@@ -87,7 +87,7 @@ router.delete("/:recipeId", async (req: Request, res: Response) => {
       `DELETE FROM favorites
        WHERE user_id = $1 AND recipe_id = $2
        RETURNING recipe_id`,
-      [DEFAULT_USER_ID, recipeId]
+      [req.userId, recipeId]
     );
 
     if (result.rowCount === 0) {

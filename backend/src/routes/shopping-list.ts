@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { pool } from "../db/pool.js";
 
 const router = Router();
-const USER_ID = 1;
+
 
 type ShoppingListRow = {
   id: number;
@@ -18,7 +18,7 @@ type ShoppingListRow = {
 };
 
 // GET /api/shopping-list
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const result = await pool.query<ShoppingListRow>(
       `SELECT sl.*, r.title AS source_recipe_title
@@ -26,12 +26,58 @@ router.get("/", async (_req: Request, res: Response) => {
        LEFT JOIN recipes r ON sl.source_recipe_id = r.id
        WHERE sl.user_id = $1
        ORDER BY sl.is_checked ASC, sl.created_at ASC`,
-      [USER_ID]
+      [req.userId]
     );
     res.json(result.rows);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "無法取得購物清單" });
+  }
+});
+
+// POST /api/shopping-list — manual add
+router.post("/", async (req: Request, res: Response) => {
+  const { ingredient_name, quantity, unit } = req.body as {
+    ingredient_name?: unknown;
+    quantity?: unknown;
+    unit?: unknown;
+  };
+
+  if (typeof ingredient_name !== "string" || !ingredient_name.trim()) {
+    res.status(400).json({ error: "ingredient_name is required" });
+    return;
+  }
+
+  const qty =
+    quantity !== undefined && quantity !== "" && quantity !== null
+      ? Number(quantity)
+      : null;
+  if (qty !== null && (Number.isNaN(qty) || qty <= 0)) {
+    res.status(400).json({ error: "quantity must be a positive number" });
+    return;
+  }
+
+  const unitStr =
+    typeof unit === "string" && unit.trim() ? unit.trim() : null;
+
+  try {
+    const result = await pool.query<ShoppingListRow>(
+      `INSERT INTO shopping_list (user_id, ingredient_name, quantity, unit)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, ingredient_name) DO NOTHING
+       RETURNING *`,
+      [req.userId, ingredient_name.trim(), qty, unitStr]
+    );
+    if (result.rows.length === 0) {
+      res
+        .status(409)
+        .json({ error: `「${ingredient_name.trim()}」已在購物清單中` });
+      return;
+    }
+    res.status(201).json(result.rows[0]);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to add item" });
   }
 });
 
@@ -50,7 +96,7 @@ router.post("/from-recipe/:recipeId", async (req: Request, res: Response) => {
       ),
       pool.query<{ name: string }>(
         "SELECT LOWER(name) AS name FROM ingredients WHERE user_id = $1",
-        [USER_ID]
+        [req.userId]
       ),
     ]);
 
@@ -71,7 +117,7 @@ router.post("/from-recipe/:recipeId", async (req: Request, res: Response) => {
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (user_id, ingredient_name) DO NOTHING
          RETURNING *`,
-        [USER_ID, item.name, item.quantity ?? null, item.unit ?? null, recipeId]
+        [req.userId, item.name, item.quantity ?? null, item.unit ?? null, recipeId]
       );
       if (result.rows.length > 0) inserted.push(result.rows[0]);
     }
@@ -84,11 +130,11 @@ router.post("/from-recipe/:recipeId", async (req: Request, res: Response) => {
 });
 
 // DELETE /api/shopping-list/clear-checked — MUST be before /:id
-router.delete("/clear-checked", async (_req: Request, res: Response) => {
+router.delete("/clear-checked", async (req: Request, res: Response) => {
   try {
     await pool.query(
       "DELETE FROM shopping_list WHERE user_id = $1 AND is_checked = TRUE",
-      [USER_ID]
+      [req.userId]
     );
     res.status(204).send();
   } catch (e) {
@@ -128,7 +174,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
   try {
     const result = await pool.query<ShoppingListRow>(
       `UPDATE shopping_list SET ${fields.join(", ")} WHERE id = $${fields.length + 1} AND user_id = $${fields.length + 2} RETURNING *`,
-      [...values, id, USER_ID]
+      [...values, id, req.userId]
     );
     if (result.rows.length === 0) {
       res.status(404).json({ error: "找不到該項目" });
@@ -151,7 +197,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
   try {
     await pool.query(
       "DELETE FROM shopping_list WHERE id = $1 AND user_id = $2",
-      [id, USER_ID]
+      [id, req.userId]
     );
     res.status(204).send();
   } catch (e) {

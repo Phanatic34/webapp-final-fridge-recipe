@@ -36,7 +36,7 @@ export type MeasureUnit = (typeof MEASURE_UNITS)[number];
 export type Category = (typeof CATEGORIES)[number];
 
 const optionalPositiveQuantity = z.preprocess(
-  (value) => (value === "" || Number.isNaN(value) ? null : value),
+  (value) => (value === "" || value === null || value === undefined || Number.isNaN(value) ? null : value),
   z
     .union([
       z.coerce.number().positive("Quantity must be greater than 0"),
@@ -65,9 +65,9 @@ export const ingredientFormSchema = z.object({
   status: z.enum(STATUSES),
   expiry_date: z.string().optional(),
 }).superRefine((data, ctx) => {
-  const hasCountQuantity = data.count_quantity != null;
+  const hasCountQuantity = data.count_quantity != null && data.count_quantity > 0;
   const hasCountUnit = data.count_unit != null;
-  const hasMeasureQuantity = data.measure_quantity != null;
+  const hasMeasureQuantity = data.measure_quantity != null && data.measure_quantity > 0;
   const hasMeasureUnit = data.measure_unit != null;
 
   if (!hasCountQuantity && !hasMeasureQuantity) {

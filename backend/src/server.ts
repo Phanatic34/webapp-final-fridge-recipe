@@ -1,11 +1,13 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import authRouter from "./routes/auth.js";
 import ingredientsRouter from "./routes/ingredients.js";
 import favoritesRouter from "./routes/favorites.js";
 import recipesRouter from "./routes/recipes.js";
 import settingsRouter from "./routes/settings.js";
 import shoppingListRouter from "./routes/shopping-list.js";
+import { requireAuth } from "./middleware/auth.js";
 
 dotenv.config();
 
@@ -24,11 +26,12 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
-app.use("/api/ingredients", ingredientsRouter);
-app.use("/api/recipes", recipesRouter);
-app.use("/api/favorites", favoritesRouter);
-app.use("/api/settings", settingsRouter);
-app.use("/api/shopping-list", shoppingListRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/ingredients", requireAuth, ingredientsRouter);
+app.use("/api/recipes", requireAuth, recipesRouter);
+app.use("/api/favorites", requireAuth, favoritesRouter);
+app.use("/api/settings", requireAuth, settingsRouter);
+app.use("/api/shopping-list", requireAuth, shoppingListRouter);
 
 app.use(
   (

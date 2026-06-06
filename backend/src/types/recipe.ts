@@ -34,6 +34,7 @@ export type RecipeIngredientRow = {
   name: string;
   quantity: string | null;
   unit: string | null;
+  allergens: string[];
 };
 
 export type RecipeIngredient = {
@@ -41,6 +42,7 @@ export type RecipeIngredient = {
   name: string;
   quantity: number | null;
   unit: string | null;
+  allergens: string[];
 };
 
 export type RecipeResponse = {
@@ -71,6 +73,7 @@ export type RecommendationResponse = {
   match_ratio: number;
   matched_ingredients: string[];
   missing_ingredients: string[];
+  insufficient_ingredients: string[];
   uses_near_expiry: boolean;
   near_expiry_ingredient_count: number;
   near_expiry_ingredients: string[];

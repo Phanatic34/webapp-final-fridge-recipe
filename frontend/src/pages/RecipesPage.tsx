@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { toast } from "sonner";
 import { Layout } from "../components/Layout";
 import { ProgressRing } from "../components/ProgressRing";
 import { useRecommendedRecipesList, useRecipesList } from "../hooks/useRecipes";
+import { useAddFavorite, useFavoritesList, useRemoveFavorite } from "../hooks/useFavorites";
 import type { Recipe, RecipeRecommendation } from "../types/recipe";
 import { CUISINE_LABELS, DIFFICULTY_LABELS } from "../utils/labels";
 
@@ -35,7 +37,32 @@ function DifficultyBadge({ difficulty }: { difficulty: string | null }) {
   );
 }
 
-function AllRecipeCard({ recipe }: { recipe: Recipe }) {
+function StarButton({ favorited, onClick }: { favorited: boolean; onClick: (e: React.MouseEvent) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={favorited ? "取消收藏" : "加入收藏"}
+      className="shrink-0 rounded-full p-0.5 transition hover:scale-110 focus:outline-none"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        stroke={favorited ? "#f59e0b" : "#9ca3af"}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill={favorited ? "#f59e0b" : "none"}
+      >
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    </button>
+  );
+}
+
+function AllRecipeCard({ recipe, favorited, onToggleFavorite }: { recipe: Recipe; favorited: boolean; onToggleFavorite: (e: React.MouseEvent) => void }) {
   return (
     <Link
       to={`/recipes/${recipe.id}`}
@@ -51,11 +78,14 @@ function AllRecipeCard({ recipe }: { recipe: Recipe }) {
           <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
             {recipe.title}
           </h3>
-          {recipe.cuisine && (
-            <span className="shrink-0 rounded bg-app-surface px-2 py-0.5 text-xs font-medium text-app-text">
-              {CUISINE_LABELS[recipe.cuisine] ?? recipe.cuisine}
-            </span>
-          )}
+          <div className="flex shrink-0 items-center gap-1">
+            {recipe.cuisine && (
+              <span className="rounded bg-app-surface px-2 py-0.5 text-xs font-medium text-app-text">
+                {CUISINE_LABELS[recipe.cuisine] ?? recipe.cuisine}
+              </span>
+            )}
+            <StarButton favorited={favorited} onClick={onToggleFavorite} />
+          </div>
         </div>
         {recipe.description && (
           <p className="line-clamp-2 text-sm text-app-muted">{recipe.description}</p>
@@ -74,7 +104,7 @@ function AllRecipeCard({ recipe }: { recipe: Recipe }) {
   );
 }
 
-function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
+function RecommendationCard({ rec, favorited, onToggleFavorite }: { rec: RecipeRecommendation; favorited: boolean; onToggleFavorite: (e: React.MouseEvent) => void }) {
   const ring = rec.uses_near_expiry
     ? "ring-2 ring-amber-300 bg-amber-50/40"
     : "ring-1 ring-app-border bg-white";
@@ -106,11 +136,14 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
           <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
             {rec.recipe.title}
           </h3>
-          {rec.recipe.cuisine && (
-            <span className="shrink-0 rounded bg-app-surface px-2 py-0.5 text-xs font-medium text-app-text">
-              {CUISINE_LABELS[rec.recipe.cuisine] ?? rec.recipe.cuisine}
-            </span>
-          )}
+          <div className="flex shrink-0 items-center gap-1">
+            {rec.recipe.cuisine && (
+              <span className="rounded bg-app-surface px-2 py-0.5 text-xs font-medium text-app-text">
+                {CUISINE_LABELS[rec.recipe.cuisine] ?? rec.recipe.cuisine}
+              </span>
+            )}
+            <StarButton favorited={favorited} onClick={onToggleFavorite} />
+          </div>
         </div>
 
         {rec.recipe.description && (
@@ -167,9 +200,28 @@ function RecommendationCard({ rec }: { rec: RecipeRecommendation }) {
 }
 
 export default function RecipesPage() {
+  const navigate = useNavigate();
   const [cuisine, setCuisine] = useState("all");
   const [maxTime, setMaxTime] = useState<number | null>(null);
   const [mode, setMode] = useState<"recommended" | "all">("recommended");
+
+  const { data: favoritesData } = useFavoritesList();
+  const favoriteIds = useMemo(() => new Set((favoritesData ?? []).map((r) => r.id)), [favoritesData]);
+  const addFav = useAddFavorite();
+  const removeFav = useRemoveFavorite();
+
+  function makeToggleFavorite(recipeId: number) {
+    return (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isFav = favoriteIds.has(recipeId);
+      if (isFav) {
+        removeFav.mutate(recipeId, { onSuccess: () => toast.success("已移除收藏"), onError: () => toast.error("更新收藏失敗") });
+      } else {
+        addFav.mutate(recipeId, { onSuccess: () => toast.success("已加入收藏"), onError: () => toast.error("更新收藏失敗") });
+      }
+    };
+  }
 
   const { data: recData, isLoading: recLoading, isError: recError, error: recErr, refetch: recRefetch } =
     useRecommendedRecipesList({ maxTime });
@@ -193,7 +245,7 @@ export default function RecipesPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="font-['Noto_Serif_TC'] text-lg font-semibold text-app-text">食譜</h2>
-            <div className="mt-2 flex gap-1">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {(["recommended", "all"] as const).map((m) => (
                 <button
                   key={m}
@@ -208,6 +260,15 @@ export default function RecipesPage() {
                   {m === "recommended" ? "推薦食譜" : "全部食譜"}
                 </button>
               ))}
+              <Link
+                to="/recipes/new"
+                className="hidden sm:inline-flex items-center gap-1 rounded-lg bg-app-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-app-primary-hover transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="12" y1="4" x2="12" y2="20" /><line x1="4" y1="12" x2="20" y2="12" />
+                </svg>
+                建立食譜
+              </Link>
             </div>
           </div>
           <div className="flex flex-wrap items-end gap-3">
@@ -325,7 +386,7 @@ export default function RecipesPage() {
                 key={rec.recipe.id}
                 variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 180, damping: 20 } } }}
               >
-                <RecommendationCard rec={rec} />
+                <RecommendationCard rec={rec} favorited={favoriteIds.has(rec.recipe.id)} onToggleFavorite={makeToggleFavorite(rec.recipe.id)} />
               </motion.div>
             ))}
           </motion.div>
@@ -343,12 +404,28 @@ export default function RecipesPage() {
                 key={recipe.id}
                 variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 180, damping: 20 } } }}
               >
-                <AllRecipeCard recipe={recipe} />
+                <AllRecipeCard recipe={recipe} favorited={favoriteIds.has(recipe.id)} onToggleFavorite={makeToggleFavorite(recipe.id)} />
               </motion.div>
             ))}
           </motion.div>
         )}
       </div>
+
+      <AnimatePresence>
+        <motion.button
+          type="button"
+          onClick={() => navigate("/recipes/new")}
+          className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-app-primary text-white shadow-lg shadow-green-900/20 hover:bg-app-primary-hover focus:outline-none sm:hidden"
+          aria-label="建立食譜"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1, transition: { type: "spring", stiffness: 260, damping: 20 } }}
+          exit={{ scale: 0, opacity: 0, transition: { duration: 0.2 } }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="4" x2="12" y2="20" /><line x1="4" y1="12" x2="20" y2="12" />
+          </svg>
+        </motion.button>
+      </AnimatePresence>
     </Layout>
   );
 }

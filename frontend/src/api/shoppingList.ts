@@ -15,6 +15,19 @@ export async function addFromRecipe(
   return data;
 }
 
+export type ManualAddPayload = {
+  ingredient_name: string;
+  quantity?: number | null;
+  unit?: string | null;
+};
+
+export async function addManualItem(
+  payload: ManualAddPayload
+): Promise<ShoppingListItem> {
+  const { data } = await api.post<ShoppingListItem>("/api/shopping-list", payload);
+  return data;
+}
+
 export async function toggleShoppingItem(
   id: number,
   is_checked: boolean

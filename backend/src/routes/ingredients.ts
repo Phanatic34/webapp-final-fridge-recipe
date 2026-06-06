@@ -12,7 +12,6 @@ import { computeExpiryMeta } from "../utils/expiry.js";
 
 const router = Router();
 
-const DEFAULT_USER_ID = 1;
 
 /**
  * API + DB: stable YYYY-MM-DD or null (never leak raw Date to JSON).
@@ -103,7 +102,7 @@ router.get("/", async (req: Request, res: Response) => {
     else if (sort === "expiry_date") orderBy = "i.expiry_date NULLS LAST, i.expiry_date ASC";
     else if (sort === "created_at") orderBy = "i.created_at DESC";
 
-    const params: unknown[] = [DEFAULT_USER_ID];
+    const params: unknown[] = [req.userId];
     let where = "WHERE i.user_id = $1";
     if (category && category !== "all") {
       params.push(category);
@@ -133,7 +132,7 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const result = await pool.query<IngredientRow>(
       `SELECT * FROM ingredients WHERE id = $1 AND user_id = $2`,
-      [id, DEFAULT_USER_ID]
+      [id, req.userId]
     );
     if (result.rows.length === 0) {
       res.status(404).json({ error: "找不到該食材" });
@@ -188,7 +187,7 @@ router.post(
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
-          DEFAULT_USER_ID,
+          req.userId,
           body.name,
           quantities.count_quantity,
           quantities.count_unit,
@@ -232,7 +231,7 @@ router.put(
     try {
       const existing = await pool.query<IngredientRow>(
         `SELECT * FROM ingredients WHERE id = $1 AND user_id = $2`,
-        [id, DEFAULT_USER_ID]
+        [id, req.userId]
       );
       if (existing.rows.length === 0) {
         res.status(404).json({ error: "找不到該食材" });
@@ -298,7 +297,7 @@ router.put(
           status,
           expiry,
           id,
-          DEFAULT_USER_ID,
+          req.userId,
         ]
       );
 
@@ -320,7 +319,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `DELETE FROM ingredients WHERE id = $1 AND user_id = $2 RETURNING id`,
-      [id, DEFAULT_USER_ID]
+      [id, req.userId]
     );
     if (result.rowCount === 0) {
       res.status(404).json({ error: "找不到該食材" });

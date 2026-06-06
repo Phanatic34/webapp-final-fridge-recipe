@@ -30,6 +30,41 @@ export type RecommendedParams = {
   maxTime?: number | null;
 };
 
+export type RecipeCreatePayload = {
+  title: string;
+  description?: string;
+  cuisine?: string;
+  cooking_time?: number | null;
+  servings?: number;
+  difficulty?: string;
+  instructions?: string;
+  ingredients: { name: string; quantity?: number | null; unit?: string; allergens?: string[] }[];
+};
+
+export async function autoAllergens(
+  name: string
+): Promise<{ allergens: string[]; source: "known" | "ai" | "error" }> {
+  const { data } = await api.post<{ allergens: string[]; source: "known" | "ai" | "error" }>(
+    "/api/recipes/auto-allergens",
+    { name }
+  );
+  return data;
+}
+
+export async function createRecipe(payload: RecipeCreatePayload): Promise<Recipe> {
+  const { data } = await api.post<{ recipe: Recipe }>("/api/recipes", payload);
+  return data.recipe;
+}
+
+export async function updateRecipe(id: number, payload: RecipeCreatePayload): Promise<Recipe> {
+  const { data } = await api.put<{ recipe: Recipe }>(`/api/recipes/${id}`, payload);
+  return data.recipe;
+}
+
+export async function deleteRecipe(id: number): Promise<void> {
+  await api.delete(`/api/recipes/${id}`);
+}
+
 export async function fetchRecommendedRecipes(
   params: RecommendedParams = {}
 ): Promise<{ recommendations: RecipeRecommendation[] }> {

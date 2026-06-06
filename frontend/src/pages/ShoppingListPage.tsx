@@ -2,12 +2,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Layout } from "../components/Layout";
+import { FormModal } from "../components/FormModal";
 import {
   useShoppingList,
   useToggleShoppingItem,
   useUpdateShoppingItemQuantity,
   useDeleteShoppingItem,
   useClearCheckedItems,
+  useAddManualShoppingItem,
 } from "../hooks/useShoppingList";
 import { useCreateIngredient } from "../hooks/useIngredients";
 
@@ -24,14 +26,35 @@ export default function ShoppingListPage() {
   const deleteItem = useDeleteShoppingItem();
   const clearChecked = useClearCheckedItems();
   const createIngredient = useCreateIngredient();
+  const addManual = useAddManualShoppingItem();
   const [editingQty, setEditingQty] = useState<Record<number, string>>({});
   const [expiryDates, setExpiryDates] = useState<Record<number, string>>({});
   const [expandedSources, setExpandedSources] = useState<Record<number, boolean>>({});
   const [addingAll, setAddingAll] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newQty, setNewQty] = useState("");
+  const [newUnit, setNewUnit] = useState("");
 
   const checkedItems = shoppingList.filter((i) => i.is_checked);
   const uncheckedCount = shoppingList.filter((i) => !i.is_checked).length;
   const hasChecked = checkedItems.length > 0;
+
+  function handleManualAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    const qty = newQty.trim() ? parseFloat(newQty) : null;
+    addManual.mutate(
+      { ingredient_name: newName.trim(), quantity: qty && qty > 0 ? qty : null, unit: newUnit.trim() || null },
+      {
+        onSuccess: () => {
+          toast.success(`「${newName.trim()}」已加入購物清單`);
+          setNewName(""); setNewQty(""); setNewUnit(""); setAddOpen(false);
+        },
+        onError: (e) => toast.error(e instanceof Error ? e.message : "新增失敗"),
+      }
+    );
+  }
 
   function handleClearChecked() {
     clearChecked.mutate(undefined, {
@@ -104,6 +127,16 @@ export default function ShoppingListPage() {
               </span>
             )}
           </h2>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setAddOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-app-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-app-primary-hover transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="4" x2="12" y2="20" /><line x1="4" y1="12" x2="20" y2="12" />
+              </svg>
+              新增項目
+            </button>
           {hasChecked && (
             <button
               onClick={handleClearChecked}
@@ -112,23 +145,12 @@ export default function ShoppingListPage() {
               清空已購
             </button>
           )}
+          </div>
         </div>
 
         <p className="text-sm text-app-muted">
           勾選表示已購買，可在店內填入到期日，回家後點「加入冰箱」補充庫存。
         </p>
-
-        {hasChecked && (
-          <button
-            onClick={() => void handleAddAllCheckedToFridge()}
-            disabled={addingAll}
-            className="hidden sm:block w-full rounded-xl bg-app-primary px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-app-primary-hover transition disabled:opacity-50"
-          >
-            {addingAll
-              ? "加入中…"
-              : `將 ${checkedItems.length} 項已購食材加入冰箱`}
-          </button>
-        )}
 
         {shoppingList.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-app-border py-12 text-center">
@@ -340,7 +362,97 @@ export default function ShoppingListPage() {
             ))}
           </ul>
         )}
+
+        {hasChecked && (
+          <button
+            onClick={() => void handleAddAllCheckedToFridge()}
+            disabled={addingAll}
+            className="hidden sm:block w-full rounded-xl bg-app-primary px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-app-primary-hover transition disabled:opacity-50"
+          >
+            {addingAll
+              ? "加入中…"
+              : `將 ${checkedItems.length} 項已購食材加入冰箱`}
+          </button>
+        )}
       </motion.div>
+
+      {/* 手動新增 FAB — 只在沒有「加入冰箱」FAB 時顯示，避免重疊 */}
+      <AnimatePresence>
+        {!hasChecked && (
+          <motion.button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="fixed bottom-6 right-6 z-40 sm:hidden flex h-12 w-12 items-center justify-center rounded-full bg-app-primary text-white shadow-lg shadow-green-900/20 hover:bg-app-primary-hover focus:outline-none"
+            aria-label="手動新增購物項目"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1, transition: { type: "spring", stiffness: 260, damping: 20 } }}
+            exit={{ scale: 0, opacity: 0, transition: { duration: 0.2 } }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="4" x2="12" y2="20" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+            </svg>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* 手動新增 modal */}
+      <FormModal open={addOpen} title="新增購物項目" onClose={() => setAddOpen(false)}>
+        <form onSubmit={handleManualAdd} className="space-y-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-app-muted">品項名稱 *</label>
+            <input
+              autoFocus
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="例：牛奶"
+              className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              required
+            />
+          </div>
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1">
+              <label className="text-xs font-medium text-app-muted">數量（選填）</label>
+              <input
+                type="number"
+                min="0.01"
+                step="any"
+                value={newQty}
+                onChange={(e) => setNewQty(e.target.value)}
+                placeholder="1"
+                className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-1">
+              <label className="text-xs font-medium text-app-muted">單位（選填）</label>
+              <input
+                type="text"
+                value={newUnit}
+                onChange={(e) => setNewUnit(e.target.value)}
+                placeholder="個、罐、g…"
+                className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => setAddOpen(false)}
+              className="flex-1 rounded-lg border border-app-border py-2 text-sm text-app-muted hover:bg-app-surface transition"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={!newName.trim() || addManual.isPending}
+              className="flex-1 rounded-lg bg-app-primary py-2 text-sm font-medium text-white hover:bg-app-primary-hover transition disabled:opacity-50"
+            >
+              新增
+            </button>
+          </div>
+        </form>
+      </FormModal>
 
       {/* 手機版批次加入冰箱 FAB */}
       <AnimatePresence>

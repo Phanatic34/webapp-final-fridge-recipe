@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import dotenv from "dotenv";
+import bcrypt from "bcrypt";
 import { pool } from "./pool.js";
 
 dotenv.config();
@@ -20,7 +21,18 @@ type RecipeSeed = {
   equipment: string[];
 };
 
-const recipes: RecipeSeed[] = [
+type IngredientSeed = {
+  name: string;
+  count_quantity: number | null;
+  count_unit: string | null;
+  measure_quantity: number | null;
+  measure_unit: string | null;
+  category: string;
+  status: string;
+  expiry_offset: number | null;
+};
+
+const demoRecipes: RecipeSeed[] = [
   // ── 原有食譜（中文化）──────────────────────────────────────
   {
     title: "番茄炒蛋",
@@ -1287,56 +1299,250 @@ const recipes: RecipeSeed[] = [
   },
 ];
 
-async function seed() {
-  const schema = readFileSync(join(__dirname, "schema.sql"), "utf-8");
-  await pool.query(schema);
+const demoIngredients: IngredientSeed[] = [
+  { name: "Milk",      count_quantity: null, count_unit: null, measure_quantity: 1,   measure_unit: "L",  category: "dairy",     status: "opened", expiry_offset: 2   },
+  { name: "Eggs",      count_quantity: 12,   count_unit: "顆", measure_quantity: null, measure_unit: null, category: "dairy",     status: "fresh",  expiry_offset: 10  },
+  { name: "Spinach",   count_quantity: null, count_unit: null, measure_quantity: 200, measure_unit: "g",  category: "vegetable", status: "fresh",  expiry_offset: -1  },
+  { name: "Rice",      count_quantity: null, count_unit: null, measure_quantity: 500, measure_unit: "g",  category: "grain",     status: "fresh",  expiry_offset: null },
+  { name: "Soy Sauce", count_quantity: 1,    count_unit: "包", measure_quantity: null, measure_unit: null, category: "condiment", status: "opened", expiry_offset: 90  },
+  { name: "Garlic",    count_quantity: 5,    count_unit: "顆", measure_quantity: null, measure_unit: null, category: "vegetable", status: "fresh",  expiry_offset: 14  },
+  { name: "Butter",    count_quantity: null, count_unit: null, measure_quantity: 100, measure_unit: "g",  category: "dairy",     status: "fresh",  expiry_offset: 30  },
+  { name: "Tomatoes",  count_quantity: 3,    count_unit: "顆", measure_quantity: null, measure_unit: null, category: "vegetable", status: "fresh",  expiry_offset: 3   },
+];
 
-  /* ---- 冰箱預設食材 ---- */
-  await pool.query(`DELETE FROM ingredients WHERE user_id = 1`);
+// ─── Alice — 台日料理愛好者 ──────────────────────────────────────────────────
 
-  await pool.query(
-    `INSERT INTO ingredients (
-       user_id, name, count_quantity, count_unit, measure_quantity, measure_unit,
-       category, status, expiry_date
-     )
-     VALUES
-       (1, '牛奶',   NULL, NULL, 1,   'L',  'dairy',     'opened', CURRENT_DATE + 2),
-       (1, '雞蛋',   12,   '顆', NULL, NULL, 'dairy',     'fresh',  CURRENT_DATE + 10),
-       (1, '菠菜',   NULL, NULL, 200, 'g',  'vegetable', 'fresh',  CURRENT_DATE - 1),
-       (1, '白米',   NULL, NULL, 500, 'g',  'grain',     'fresh',  NULL),
-       (1, '醬油',   1,    '瓶', NULL, NULL, 'condiment', 'opened', CURRENT_DATE + 90),
-       (1, '大蒜',   5,    '顆', NULL, NULL, 'vegetable', 'fresh',  CURRENT_DATE + 14),
-       (1, '奶油',   NULL, NULL, 100, 'g',  'dairy',     'fresh',  CURRENT_DATE + 30),
-       (1, '番茄',   3,    '顆', NULL, NULL, 'vegetable', 'fresh',  CURRENT_DATE + 3)`
+const aliceRecipes: RecipeSeed[] = [
+  {
+    title: "三杯雞",
+    description: "台式經典，麻油、醬油、米酒各一杯，香氣四溢。",
+    cuisine: "taiwanese", cooking_time: 30, servings: 3, difficulty: "medium",
+    instructions: "1. 雞腿切塊備用。\n2. 熱鍋下麻油，爆香薑片和蒜頭。\n3. 放入雞塊煎至表面金黃。\n4. 加入醬油、米酒、糖，大火燒開後轉小火燜煮。\n5. 收汁後加入九層塔翻炒即可。",
+    ingredients: [
+      { name: "雞腿", quantity: 400, unit: "g" },
+      { name: "麻油", quantity: 3, unit: "tbsp" },
+      { name: "醬油", quantity: 3, unit: "tbsp" },
+      { name: "米酒", quantity: 3, unit: "tbsp" },
+      { name: "薑", quantity: 30, unit: "g" },
+      { name: "蒜頭", quantity: 6, unit: "顆" },
+      { name: "九層塔", quantity: 15, unit: "g" },
+      { name: "糖", quantity: 1, unit: "tbsp" },
+    ],
+    equipment: ["炒鍋"],
+  },
+  {
+    title: "味噌豆腐湯",
+    description: "清淡暖胃的日式湯品，豆腐嫩滑、味噌香濃。",
+    cuisine: "japanese", cooking_time: 10, servings: 2, difficulty: "easy",
+    instructions: "1. 昆布高湯煮滾。\n2. 放入切丁豆腐和裙帶菜。\n3. 關火後溶入味噌。\n4. 撒上蔥花即可上桌。",
+    ingredients: [
+      { name: "豆腐", quantity: 200, unit: "g" },
+      { name: "味噌", quantity: 2, unit: "tbsp" },
+      { name: "裙帶菜", quantity: 5, unit: "g" },
+      { name: "蔥", quantity: 1, unit: "根" },
+      { name: "昆布高湯", quantity: 500, unit: "ml" },
+    ],
+    equipment: ["湯鍋"],
+  },
+  {
+    title: "滷肉飯",
+    description: "肥瘦相間的豬五花慢滷入味，拌飯一流。",
+    cuisine: "taiwanese", cooking_time: 60, servings: 4, difficulty: "medium",
+    instructions: "1. 五花肉切小丁，油蔥酥炒香。\n2. 加入醬油、冰糖、米酒和水。\n3. 滷包放入，小火燉煮 40 分鐘。\n4. 盛飯，淋上滷肉即可。",
+    ingredients: [
+      { name: "豬五花", quantity: 400, unit: "g" },
+      { name: "醬油", quantity: 4, unit: "tbsp" },
+      { name: "米酒", quantity: 2, unit: "tbsp" },
+      { name: "冰糖", quantity: 1, unit: "tbsp" },
+      { name: "油蔥酥", quantity: 2, unit: "tbsp" },
+      { name: "白飯", quantity: 600, unit: "g" },
+      { name: "水", quantity: 200, unit: "ml" },
+    ],
+    equipment: ["湯鍋", "電鍋"],
+  },
+  {
+    title: "玉子燒",
+    description: "日式甜味煎蛋捲，早餐便當必備。",
+    cuisine: "japanese", cooking_time: 15, servings: 2, difficulty: "easy",
+    instructions: "1. 雞蛋打散，加入味醂、醬油、砂糖拌勻。\n2. 玉子燒鍋塗油熱鍋。\n3. 倒入少量蛋液，半凝固時捲起推至一端。\n4. 重複加蛋液捲疊，共三至四層即完成。",
+    ingredients: [
+      { name: "雞蛋", quantity: 3, unit: "顆" },
+      { name: "味醂", quantity: 1, unit: "tbsp" },
+      { name: "醬油", quantity: 0.5, unit: "tsp" },
+      { name: "砂糖", quantity: 1, unit: "tsp" },
+      { name: "食用油", quantity: 1, unit: "tsp" },
+    ],
+    equipment: ["平底鍋"],
+  },
+  {
+    title: "蔥爆豬肉",
+    description: "大蔥與豬肉的完美組合，下飯首選。",
+    cuisine: "taiwanese", cooking_time: 15, servings: 2, difficulty: "easy",
+    instructions: "1. 豬肉片用醬油、米酒醃 10 分鐘。\n2. 熱鍋大火快炒豬肉至變色盛起。\n3. 原鍋炒香蒜末，放入大蔥段翻炒。\n4. 豬肉回鍋，加蠔油調味炒勻即可。",
+    ingredients: [
+      { name: "豬肉片", quantity: 250, unit: "g" },
+      { name: "大蔥", quantity: 2, unit: "根" },
+      { name: "蒜頭", quantity: 3, unit: "顆" },
+      { name: "醬油", quantity: 2, unit: "tbsp" },
+      { name: "米酒", quantity: 1, unit: "tbsp" },
+      { name: "蠔油", quantity: 1, unit: "tbsp" },
+    ],
+    equipment: ["炒鍋"],
+  },
+];
+
+const aliceIngredients: IngredientSeed[] = [
+  { name: "雞腿",   count_quantity: 2,    count_unit: "塊", measure_quantity: null, measure_unit: null, category: "meat",      status: "fresh",  expiry_offset: 2   },
+  { name: "豆腐",   count_quantity: null, count_unit: null, measure_quantity: 300, measure_unit: "g",  category: "other",     status: "fresh",  expiry_offset: 3   },
+  { name: "味噌",   count_quantity: null, count_unit: null, measure_quantity: 200, measure_unit: "g",  category: "condiment", status: "opened", expiry_offset: 60  },
+  { name: "白飯",   count_quantity: null, count_unit: null, measure_quantity: 600, measure_unit: "g",  category: "grain",     status: "fresh",  expiry_offset: 1   },
+  { name: "蔥",     count_quantity: 3,    count_unit: "根", measure_quantity: null, measure_unit: null, category: "vegetable", status: "fresh",  expiry_offset: 4   },
+  { name: "薑",     count_quantity: null, count_unit: null, measure_quantity: 50,  measure_unit: "g",  category: "vegetable", status: "fresh",  expiry_offset: 14  },
+  { name: "醬油",   count_quantity: 1,    count_unit: "瓶", measure_quantity: null, measure_unit: null, category: "condiment", status: "opened", expiry_offset: 180 },
+  { name: "麻油",   count_quantity: null, count_unit: null, measure_quantity: 100, measure_unit: "ml", category: "condiment", status: "opened", expiry_offset: 180 },
+  { name: "雞蛋",   count_quantity: 6,    count_unit: "顆", measure_quantity: null, measure_unit: null, category: "dairy",     status: "fresh",  expiry_offset: 14  },
+  { name: "豬五花", count_quantity: null, count_unit: null, measure_quantity: 400, measure_unit: "g",  category: "meat",      status: "fresh",  expiry_offset: 2   },
+];
+
+// ─── Bob — 西式料理愛好者（已全中文化） ─────────────────────────────────────────
+
+const bobRecipes: RecipeSeed[] = [
+  {
+    title: "培根蛋波納拉義大利麵",
+    description: "經典羅馬義大利麵，搭配香脆培根、蛋黃與起司。",
+    cuisine: "italian", cooking_time: 20, servings: 2, difficulty: "medium",
+    instructions: "1. 義大利麵放入鹽水中煮至保有口感。\n2. 培根煎至香脆後撈出備用。\n3. 將蛋黃、帕馬森起司與黑胡椒攪拌均勻。\n4. 關火，利用餘溫將熱麵條與蛋黃醬汁拌勻。\n5. 加入培根與少許煮麵水調整濃稠度，立即上桌。",
+    ingredients: [
+      { name: "義大利麵", quantity: 200, unit: "g" },
+      { name: "培根", quantity: 100, unit: "g" },
+      { name: "蛋黃", quantity: 3, unit: "個" },
+      { name: "帕馬森起司", quantity: 50, unit: "g" },
+      { name: "黑胡椒", quantity: 1, unit: "tsp" },
+      { name: "鹽", quantity: 1, unit: "tsp" },
+    ],
+    equipment: ["湯鍋", "平底鍋"],
+  },
+  {
+    title: "BLT 三明治",
+    description: "香脆培根、鮮美萵苣與多汁番茄的經典組合。",
+    cuisine: "american", cooking_time: 10, servings: 1, difficulty: "easy",
+    instructions: "1. 吐司烤至金黃酥脆。\n2. 培根煎至香脆。\n3. 在兩片吐司上塗抹美乃滋。\n4. 依序鋪上萵苣、番茄和培根。\n5. 對切後即可享用。",
+    ingredients: [
+      { name: "吐司", quantity: 2, unit: "片" },
+      { name: "培根", quantity: 60, unit: "g" },
+      { name: "萵苣", quantity: 30, unit: "g" },
+      { name: "番茄", quantity: 1, unit: "個" },
+      { name: "美乃滋", quantity: 1, unit: "tbsp" },
+    ],
+    equipment: ["平底鍋"],
+  },
+  {
+    title: "經典牛肉堡",
+    description: "鮮美多汁的手工牛肉漢堡排搭配經典配料。",
+    cuisine: "american", cooking_time: 20, servings: 2, difficulty: "medium",
+    instructions: "1. 牛絞肉加入鹽 and 黑胡椒拌勻，拍打塑形成漢堡排。\n2. 煎鍋或烤盤每面煎 3-4 分鐘。\n3. 烤熱漢堡麵包。\n4. 依序放上萵苣、番茄、起司片、漢堡肉與醬料組裝。",
+    ingredients: [
+      { name: "牛絞肉", quantity: 300, unit: "g" },
+      { name: "漢堡麵包", quantity: 2, unit: "個" },
+      { name: "切達起司", quantity: 2, unit: "片" },
+      { name: "萵苣", quantity: 40, unit: "g" },
+      { name: "番茄", quantity: 1, unit: "個" },
+      { name: "洋蔥", quantity: 0.5, unit: "個" },
+      { name: "鹽", quantity: 0.5, unit: "tsp" },
+      { name: "黑胡椒", quantity: 0.5, unit: "tsp" },
+    ],
+    equipment: ["平底鍋"],
+  },
+  {
+    title: "美式培根炒蛋",
+    description: "奶香濃郁的滑嫩炒蛋搭配香脆培根條。",
+    cuisine: "american", cooking_time: 10, servings: 1, difficulty: "easy",
+    instructions: "1. 雞蛋與少許牛奶、調味料一同打散。\n2. 培根煎至香脆後撈出備用。\n3. 小火在鍋中融化奶油。\n4. 倒入蛋液並輕柔推動翻褶，至半熟凝固即可。\n5. 與培根一同擺盤上桌。",
+    ingredients: [
+      { name: "雞蛋", quantity: 3, unit: "顆" },
+      { name: "培根", quantity: 80, unit: "g" },
+      { name: "奶油", quantity: 1, unit: "tbsp" },
+      { name: "牛奶", quantity: 2, unit: "tbsp" },
+      { name: "鹽", quantity: 0.25, unit: "tsp" },
+      { name: "黑胡椒", quantity: 0.25, unit: "tsp" },
+    ],
+    equipment: ["平底鍋"],
+  },
+  {
+    title: "番茄羅勒義大利麵",
+    description: "新鮮番茄醬汁搭配羅勒與大蒜的清爽義大利麵。",
+    cuisine: "italian", cooking_time: 25, servings: 2, difficulty: "easy",
+    instructions: "1. 橄欖油熱鍋，爆香蒜碎。\n2. 加入切丁番茄，小火燉煮 15 分鐘至軟爛。\n3. 加入鹽調味並撒入撕碎的羅勒葉。\n4. 放入煮好的義大利麵一同翻炒，最後撒上帕馬森起司。",
+    ingredients: [
+      { name: "義大利麵", quantity: 200, unit: "g" },
+      { name: "番茄", quantity: 3, unit: "個" },
+      { name: "大蒜", quantity: 3, unit: "瓣" },
+      { name: "橄欖油", quantity: 3, unit: "tbsp" },
+      { name: "羅勒", quantity: 10, unit: "g" },
+      { name: "帕馬森起司", quantity: 30, unit: "g" },
+      { name: "鹽", quantity: 1, unit: "tsp" },
+    ],
+    equipment: ["湯鍋", "平底鍋"],
+  },
+];
+
+const bobIngredients: IngredientSeed[] = [
+  { name: "培根",       count_quantity: null, count_unit: null, measure_quantity: 200, measure_unit: "g",      category: "meat",      status: "fresh",  expiry_offset: 5   },
+  { name: "雞蛋",       count_quantity: 6,    count_unit: "顆", measure_quantity: null, measure_unit: null, category: "dairy",     status: "fresh",  expiry_offset: 14  },
+  { name: "義大利麵",   count_quantity: null, count_unit: null, measure_quantity: 500, measure_unit: "g",      category: "grain",     status: "fresh",  expiry_offset: null },
+  { name: "帕馬森起司", count_quantity: null, count_unit: null, measure_quantity: 100, measure_unit: "g",      category: "dairy",     status: "opened", expiry_offset: 30  },
+  { name: "奶油",       count_quantity: null, count_unit: null, measure_quantity: 200, measure_unit: "g",      category: "dairy",     status: "fresh",  expiry_offset: 30  },
+  { name: "牛奶",       count_quantity: null, count_unit: null, measure_quantity: 1,   measure_unit: "L",      category: "dairy",     status: "opened", expiry_offset: 4   },
+  { name: "番茄",       count_quantity: 4,    count_unit: "顆", measure_quantity: null, measure_unit: null, category: "vegetable", status: "fresh",  expiry_offset: 3   },
+  { name: "萵苣",       count_quantity: null, count_unit: null, measure_quantity: 150, measure_unit: "g",      category: "vegetable", status: "fresh",  expiry_offset: 2   },
+  { name: "大蒜",       count_quantity: 4,    count_unit: "瓣", measure_quantity: null, measure_unit: null, category: "vegetable", status: "fresh",  expiry_offset: 14  },
+  { name: "橄欖油",     count_quantity: null, count_unit: null, measure_quantity: 300, measure_unit: "ml",     category: "condiment", status: "opened", expiry_offset: 365 },
+  { name: "吐司",       count_quantity: 6,    count_unit: "片", measure_quantity: null, measure_unit: null, category: "grain",     status: "fresh",  expiry_offset: 3   },
+];
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+async function upsertUser(email: string, displayName: string, password: string): Promise<string> {
+  const hash = await bcrypt.hash(password, 10);
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO users (email, display_name, password_hash)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, display_name = EXCLUDED.display_name
+     RETURNING id`,
+    [email, displayName, hash]
   );
+  return result.rows[0].id;
+}
 
-  /* ---- 食譜 ---- */
-  await pool.query(`DELETE FROM recipe_ingredients`);
-  await pool.query(`DELETE FROM recipe_equipment`);
-  await pool.query(`DELETE FROM recipes`);
-
-  for (const r of recipes) {
-    const result = await pool.query<{ id: number }>(
-      `INSERT INTO recipes (title, description, cuisine, cooking_time, servings, difficulty, instructions)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id`,
-      [
-        r.title,
-        r.description,
-        r.cuisine,
-        r.cooking_time,
-        r.servings,
-        r.difficulty,
-        r.instructions,
-      ]
+async function seedIngredients(userId: string, items: IngredientSeed[]) {
+  await pool.query(`DELETE FROM ingredients WHERE user_id = $1`, [userId]);
+  for (const item of items) {
+    const expiry = item.expiry_offset !== null
+      ? `CURRENT_DATE + ${item.expiry_offset}`
+      : "NULL";
+    await pool.query(
+      `INSERT INTO ingredients (user_id, name, count_quantity, count_unit, measure_quantity, measure_unit, category, status, expiry_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ${expiry})`,
+      [userId, item.name, item.count_quantity, item.count_unit, item.measure_quantity, item.measure_unit, item.category, item.status]
     );
+  }
+}
 
+async function seedRecipes(userId: string, recipeList: RecipeSeed[]) {
+  await pool.query(`DELETE FROM recipe_ingredients WHERE recipe_id IN (SELECT id FROM recipes WHERE user_id = $1)`, [userId]);
+  await pool.query(`DELETE FROM recipe_equipment   WHERE recipe_id IN (SELECT id FROM recipes WHERE user_id = $1)`, [userId]);
+  await pool.query(`DELETE FROM recipes WHERE user_id = $1`, [userId]);
+
+  for (const r of recipeList) {
+    const result = await pool.query<{ id: number }>(
+      `INSERT INTO recipes (user_id, title, description, cuisine, cooking_time, servings, difficulty, instructions)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [userId, r.title, r.description, r.cuisine, r.cooking_time, r.servings, r.difficulty, r.instructions]
+    );
     const recipeId = result.rows[0].id;
-
     for (const ing of r.ingredients) {
       await pool.query(
-        `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit)
-         VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit) VALUES ($1, $2, $3, $4)`,
         [recipeId, ing.name, ing.quantity, ing.unit]
       );
     }
@@ -1348,12 +1554,32 @@ async function seed() {
       );
     }
   }
+}
 
-  await pool.query(`DELETE FROM favorites WHERE user_id = 1`);
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
-  console.log(
-    `Seed 完成：8 項食材、${recipes.length} 道食譜、${recipes.reduce((n, r) => n + r.equipment.length, 0)} 筆廚具資料。`
-  );
+async function seed() {
+  const schema = readFileSync(join(__dirname, "schema.sql"), "utf-8");
+  await pool.query(schema);
+
+  const users = [
+    { email: "demo@example.com",  display_name: "測試帳號",        password: "demo1234",  recipes: demoRecipes,  ingredients: demoIngredients  },
+    { email: "alice@example.com", display_name: "Alice（台日料理）", password: "alice1234", recipes: aliceRecipes, ingredients: aliceIngredients },
+    { email: "bob@example.com",   display_name: "Bob（西式料理）",   password: "bob12345",  recipes: bobRecipes,   ingredients: bobIngredients   },
+  ];
+
+  for (const u of users) {
+    const userId = await upsertUser(u.email, u.display_name, u.password);
+    await seedIngredients(userId, u.ingredients);
+    await seedRecipes(userId, u.recipes);
+    await pool.query(`DELETE FROM favorites WHERE user_id = $1`, [userId]);
+    console.log(`  ✓ ${u.email} (${u.display_name}) — ${u.ingredients.length} 項食材, ${u.recipes.length} 道食譜資料已匯入`);
+  }
+
+  console.log("\nSeed 完成！範例帳號：");
+  for (const u of users) {
+    console.log(`  ${u.email} / ${u.password}`);
+  }
   await pool.end();
 }
 
