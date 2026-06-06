@@ -1,6 +1,6 @@
 -- Users
 CREATE TABLE IF NOT EXISTS users (
-  id            SERIAL PRIMARY KEY,
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         TEXT UNIQUE NOT NULL,
   display_name  TEXT NOT NULL,
   password_hash TEXT NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Fridge Recipe Recommender — MVP ingredient inventory
 CREATE TABLE IF NOT EXISTS ingredients (
   id            SERIAL PRIMARY KEY,
-  user_id       INTEGER NOT NULL DEFAULT 1,
+  user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name          VARCHAR(255) NOT NULL,
   count_quantity   DECIMAL(10, 2),
   count_unit       VARCHAR(50),
@@ -102,7 +102,7 @@ CREATE INDEX IF NOT EXISTS idx_ingredients_expiry ON ingredients(expiry_date);
 -- Phase 3: Recipe data model
 CREATE TABLE IF NOT EXISTS recipes (
   id              SERIAL PRIMARY KEY,
-  user_id         INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
   title           VARCHAR(255) NOT NULL,
   description     TEXT,
   image_url       TEXT,
@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE recipes ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS idx_recipes_user_id ON recipes(user_id);
 
 CREATE TABLE IF NOT EXISTS recipe_ingredients (
@@ -134,7 +134,7 @@ CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_name ON recipe_ingredients(LOW
 -- Favorites (Phase 5: demo polish / user saved recipes)
 CREATE TABLE IF NOT EXISTS favorites (
   id          SERIAL PRIMARY KEY,
-  user_id     INTEGER NOT NULL DEFAULT 1,
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   recipe_id   INTEGER NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, recipe_id)
@@ -155,7 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_recipe_equipment_recipe ON recipe_equipment(recip
 -- Equipment the user owns
 CREATE TABLE IF NOT EXISTS user_equipment (
   id             SERIAL PRIMARY KEY,
-  user_id        INTEGER NOT NULL DEFAULT 1,
+  user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   equipment_name TEXT NOT NULL,
   UNIQUE(user_id, equipment_name)
 );
@@ -165,7 +165,7 @@ CREATE INDEX IF NOT EXISTS idx_user_equipment_user_id ON user_equipment(user_id)
 -- Ingredients/allergens the user excludes from recommendations
 CREATE TABLE IF NOT EXISTS user_exclusions (
   id      SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL DEFAULT 1,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name    TEXT NOT NULL,
   type    TEXT NOT NULL CHECK (type IN ('allergen', 'custom')),
   UNIQUE(user_id, name)
@@ -176,7 +176,7 @@ CREATE INDEX IF NOT EXISTS idx_user_exclusions_user_id ON user_exclusions(user_i
 -- Shopping list
 CREATE TABLE IF NOT EXISTS shopping_list (
   id               SERIAL PRIMARY KEY,
-  user_id          INTEGER NOT NULL DEFAULT 1,
+  user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   ingredient_name  TEXT NOT NULL,
   quantity         DECIMAL(10, 2),
   unit             TEXT,

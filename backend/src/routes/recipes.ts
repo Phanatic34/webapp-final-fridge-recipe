@@ -52,7 +52,7 @@ type FridgeQuantity = {
   measure_unit: string | null;
 };
 
-async function loadFridge(userId: number) {
+async function loadFridge(userId: string) {
   const { rows } = await pool.query<{
     name: string;
     expiry_date: string | Date | null;
@@ -140,7 +140,7 @@ type RecipeWithIngredients = RecipeRow & {
   ingredientRows: RecipeIngredientRow[];
 };
 
-async function loadAllRecipesWithIngredients(userId: number): Promise<
+async function loadAllRecipesWithIngredients(userId: string): Promise<
   RecipeWithIngredients[]
 > {
   const recipesResult = await pool.query<RecipeRow>(
@@ -176,7 +176,7 @@ const ALLERGEN_ALIASES: Record<string, string[]> = {
   "海鮮": ["蝦", "蝦仁", "草蝦", "龍蝦", "蟹", "螃蟹", "魚", "鮭魚", "鮪魚", "鯖魚", "鱈魚", "花枝", "魷魚", "章魚", "蛤蜊", "蚵仔", "牡蠣", "干貝", "shrimp", "shrimps", "prawn", "prawns", "crab", "lobster", "fish", "salmon", "tuna", "squid", "oyster", "clam", "scallop", "seafood"],
 };
 
-async function loadExclusions(userId: number): Promise<Set<string>> {
+async function loadExclusions(userId: string): Promise<Set<string>> {
   const { rows } = await pool.query<{ name: string }>(
     "SELECT LOWER(name) AS name FROM user_exclusions WHERE user_id = $1",
     [userId]
@@ -191,7 +191,7 @@ async function loadExclusions(userId: number): Promise<Set<string>> {
   return set;
 }
 
-async function loadUserEquipment(userId: number): Promise<Set<string>> {
+async function loadUserEquipment(userId: string): Promise<Set<string>> {
   const { rows } = await pool.query<{ equipment_name: string }>(
     "SELECT equipment_name FROM user_equipment WHERE user_id = $1",
     [userId]

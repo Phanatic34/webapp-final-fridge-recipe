@@ -424,9 +424,9 @@ const bobIngredients: IngredientSeed[] = [
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function upsertUser(email: string, displayName: string, password: string): Promise<number> {
+async function upsertUser(email: string, displayName: string, password: string): Promise<string> {
   const hash = await bcrypt.hash(password, 10);
-  const result = await pool.query<{ id: number }>(
+  const result = await pool.query<{ id: string }>(
     `INSERT INTO users (email, display_name, password_hash)
      VALUES ($1, $2, $3)
      ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, display_name = EXCLUDED.display_name
@@ -436,7 +436,7 @@ async function upsertUser(email: string, displayName: string, password: string):
   return result.rows[0].id;
 }
 
-async function seedIngredients(userId: number, items: IngredientSeed[]) {
+async function seedIngredients(userId: string, items: IngredientSeed[]) {
   await pool.query(`DELETE FROM ingredients WHERE user_id = $1`, [userId]);
   for (const item of items) {
     const expiry = item.expiry_offset !== null
@@ -450,7 +450,7 @@ async function seedIngredients(userId: number, items: IngredientSeed[]) {
   }
 }
 
-async function seedRecipes(userId: number, recipeList: RecipeSeed[]) {
+async function seedRecipes(userId: string, recipeList: RecipeSeed[]) {
   await pool.query(`DELETE FROM recipe_ingredients WHERE recipe_id IN (SELECT id FROM recipes WHERE user_id = $1)`, [userId]);
   await pool.query(`DELETE FROM recipe_equipment   WHERE recipe_id IN (SELECT id FROM recipes WHERE user_id = $1)`, [userId]);
   await pool.query(`DELETE FROM recipes WHERE user_id = $1`, [userId]);

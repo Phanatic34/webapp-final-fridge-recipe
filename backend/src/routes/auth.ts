@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { pool } from "../db/pool.js";
-import { JWT_SECRET } from "../middleware/auth.js";
+import { requireAuth, JWT_SECRET } from "../middleware/auth.js";
 
 const router = Router();
 const SALT_ROUNDS = 10;
@@ -79,6 +79,91 @@ router.post("/login", async (req: Request, res: Response) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "登入失敗" });
+  }
+});
+
+// GET /api/auth/me
+router.get("/me", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query<{ id: string; email: string; display_name: string }>(
+      "SELECT id, email, display_name FROM users WHERE id = $1",
+      [req.userId]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json(result.rows[0]);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+// PATCH /api/auth/me — update display_name and/or password
+router.patch("/me", requireAuth, async (req: Request, res: Response) => {
+  const { display_name, current_password, new_password } = req.body as {
+    display_name?: string;
+    current_password?: string;
+    new_password?: string;
+  };
+
+  try {
+    const userResult = await pool.query<UserRow>(
+      "SELECT id, email, display_name, password_hash FROM users WHERE id = $1",
+      [req.userId]
+    );
+    if (userResult.rows.length === 0) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    const user = userResult.rows[0];
+
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    if (display_name !== undefined) {
+      if (!display_name.trim()) {
+        res.status(400).json({ error: "顯示名稱不能為空" });
+        return;
+      }
+      fields.push(`display_name = $${fields.length + 1}`);
+      values.push(display_name.trim());
+    }
+
+    if (new_password !== undefined) {
+      if (!current_password) {
+        res.status(400).json({ error: "請輸入目前的密碼" });
+        return;
+      }
+      const valid = await bcrypt.compare(current_password, user.password_hash);
+      if (!valid) {
+        res.status(401).json({ error: "目前密碼不正確" });
+        return;
+      }
+      if (new_password.length < 6) {
+        res.status(400).json({ error: "新密碼至少需要 6 個字元" });
+        return;
+      }
+      const hash = await bcrypt.hash(new_password, SALT_ROUNDS);
+      fields.push(`password_hash = $${fields.length + 1}`);
+      values.push(hash);
+    }
+
+    if (fields.length === 0) {
+      res.status(400).json({ error: "No fields to update" });
+      return;
+    }
+
+    values.push(req.userId);
+    const result = await pool.query<{ id: string; email: string; display_name: string }>(
+      `UPDATE users SET ${fields.join(", ")} WHERE id = $${fields.length + 1} RETURNING id, email, display_name`,
+      values
+    );
+    res.json(result.rows[0]);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to update user" });
   }
 });
 

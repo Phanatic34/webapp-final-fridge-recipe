@@ -1,8 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { useQueryClient } from "@tanstack/react-query";
 import { useShoppingList } from "../hooks/useShoppingList";
 import { useAuth } from "../context/AuthContext";
 import logoUrl from "../assets/logo.png";
@@ -39,15 +38,7 @@ export function Layout({
     nearExpiryCount !== undefined &&
     expiredCount !== undefined;
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
-  function handleLogout() {
-    logout();
-    queryClient.clear();
-    navigate("/login");
-  }
+  const { user } = useAuth();
 
   return (
     <div className="app-bg">
@@ -56,14 +47,16 @@ export function Layout({
       >
         {/* Title row */}
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:min-h-[64px]">
-          <h1 className="flex items-center gap-2 font-['Noto_Serif_TC'] text-xl font-bold tracking-tight text-app-header-text">
-            <img
-              src={logoUrl}
-              alt=""
-              aria-hidden="true"
-              className="h-8 w-8 rounded-md bg-app-header-cta object-cover ring-1 ring-app-header-accent"
-            />
-            冰箱食譜推薦
+          <h1 className="min-w-0 shrink font-['Noto_Serif_TC'] text-xl font-bold tracking-tight text-app-header-text">
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <img
+                src={logoUrl}
+                alt=""
+                aria-hidden="true"
+                className="h-8 w-8 rounded-md bg-app-header-cta object-cover ring-1 ring-app-header-accent"
+              />
+              冰箱食譜推薦
+            </Link>
           </h1>
 
           {/* Desktop: right-side actions */}
@@ -84,23 +77,38 @@ export function Layout({
               </button>
             )}
             {user && (
-              <div className="hidden sm:flex items-center gap-2">
-                <span className="text-xs text-app-header-inactive">{user.display_name}</span>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="rounded-lg border border-app-header-accent/50 px-3 py-1.5 text-xs font-medium text-app-header-inactive transition hover:border-app-header-accent hover:text-app-header-text"
+              <div className="hidden sm:flex items-center">
+                <Link
+                  to="/settings"
+                  className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-app-header-inactive transition hover:text-app-header-text"
                 >
-                  登出
-                </button>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                  </svg>
+                  {user.display_name}
+                </Link>
               </div>
             )}
           </div>
 
-          {/* Mobile: hamburger button */}
+          {/* Mobile: account link + hamburger */}
+          <div className="flex items-center gap-1 sm:hidden">
+            {user && (
+              <Link
+                to="/settings"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-app-header-inactive transition hover:text-app-header-text"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
+                <span className="max-w-[72px] truncate text-xs font-medium">{user.display_name}</span>
+              </Link>
+            )}
           <button
             type="button"
-            className="relative rounded p-1.5 text-app-header-inactive transition hover:bg-app-header-accent/15 hover:text-app-header-text sm:hidden"
+            className="relative rounded p-1.5 text-app-header-inactive transition hover:bg-app-header-accent/15 hover:text-app-header-text"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? "關閉選單" : "開啟選單"}
             aria-expanded={menuOpen}
@@ -134,6 +142,7 @@ export function Layout({
               )}
             </AnimatePresence>
           </button>
+          </div>
         </div>
 
         {/* Desktop nav */}
@@ -217,18 +226,6 @@ export function Layout({
                     </motion.li>
                   ))}
                 </ul>
-                {user && (
-                  <div className="flex items-center justify-between border-t border-app-header-accent/25 px-6 py-4">
-                    <span className="text-sm text-app-header-inactive">{user.display_name}</span>
-                    <button
-                      type="button"
-                      onClick={() => { setMenuOpen(false); handleLogout(); }}
-                      className="text-sm font-medium text-app-header-inactive hover:text-app-header-text transition"
-                    >
-                      登出
-                    </button>
-                  </div>
-                )}
               </nav>
             </motion.div>
           )}

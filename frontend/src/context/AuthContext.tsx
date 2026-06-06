@@ -10,6 +10,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   login: (token: string, user: AuthUser) => void;
   logout: () => void;
+  updateUser: (user: AuthUser) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -45,8 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  function updateUser(newUser: AuthUser) {
+    setUser(newUser);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token && !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token && !!user, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

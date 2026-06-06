@@ -20,3 +20,12 @@ export async function register(
   });
   return data;
 }
+
+export async function updateMe(body: {
+  display_name?: string;
+  current_password?: string;
+  new_password?: string;
+}): Promise<AuthUser> {
+  const { data } = await api.patch<AuthUser>("/api/auth/me", body);
+  return data;
+}

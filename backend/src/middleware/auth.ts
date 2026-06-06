@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-in-prod";
 declare global {
   namespace Express {
     interface Request {
-      userId: number;
+      userId: string;
     }
   }
 }
@@ -19,7 +19,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
   const token = header.slice(7);
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string };
     req.userId = payload.userId;
     next();
   } catch {
