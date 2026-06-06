@@ -74,7 +74,7 @@ function validateStoredQuantities(input: {
   const hasMeasureUnit = input.measure_unit != null;
 
   if (!hasCountQuantity && !hasMeasureQuantity) {
-    return "Provide either count quantity or measurement quantity";
+    return "請提供數量或重量／體積其中一種";
   }
   if (hasCountQuantity && !hasCountUnit) {
     return "count_unit is required when count_quantity is provided";
@@ -118,7 +118,7 @@ router.get("/", async (req: Request, res: Response) => {
     res.json({ ingredients });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to list ingredients" });
+    res.status(500).json({ error: "無法取得食材清單" });
   }
 });
 
@@ -126,7 +126,7 @@ router.get("/", async (req: Request, res: Response) => {
 router.get("/:id", async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
+    res.status(400).json({ error: "無效的食材 ID" });
     return;
   }
   try {
@@ -135,13 +135,13 @@ router.get("/:id", async (req: Request, res: Response) => {
       [id, req.userId]
     );
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Ingredient not found" });
+      res.status(404).json({ error: "找不到該食材" });
       return;
     }
     res.json({ ingredient: rowToResponse(result.rows[0]) });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to fetch ingredient" });
+    res.status(500).json({ error: "無法取得食材" });
   }
 });
 
@@ -201,7 +201,7 @@ router.post(
       res.status(201).json({ ingredient: rowToResponse(result.rows[0]) });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: "Failed to create ingredient" });
+      res.status(500).json({ error: "無法新增食材" });
     }
   }
 );
@@ -213,7 +213,7 @@ router.put(
   async (req: Request, res: Response) => {
     const id = Number.parseInt(req.params.id, 10);
     if (Number.isNaN(id)) {
-      res.status(400).json({ error: "Invalid id" });
+      res.status(400).json({ error: "無效的食材 ID" });
       return;
     }
 
@@ -234,7 +234,7 @@ router.put(
         [id, req.userId]
       );
       if (existing.rows.length === 0) {
-        res.status(404).json({ error: "Ingredient not found" });
+        res.status(404).json({ error: "找不到該食材" });
         return;
       }
       const cur = existing.rows[0];
@@ -304,7 +304,7 @@ router.put(
       res.json({ ingredient: rowToResponse(result.rows[0]) });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: "Failed to update ingredient" });
+      res.status(500).json({ error: "無法更新食材" });
     }
   }
 );
@@ -313,7 +313,7 @@ router.put(
 router.delete("/:id", async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
+    res.status(400).json({ error: "無效的食材 ID" });
     return;
   }
   try {
@@ -322,13 +322,13 @@ router.delete("/:id", async (req: Request, res: Response) => {
       [id, req.userId]
     );
     if (result.rowCount === 0) {
-      res.status(404).json({ error: "Ingredient not found" });
+      res.status(404).json({ error: "找不到該食材" });
       return;
     }
-    res.json({ message: "Deleted" });
+    res.json({ message: "已刪除" });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to delete ingredient" });
+    res.status(500).json({ error: "無法刪除食材" });
   }
 });
 

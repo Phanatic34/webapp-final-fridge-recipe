@@ -32,7 +32,7 @@ router.get("/", async (req: Request, res: Response) => {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to fetch settings" });
+    res.status(500).json({ error: "無法取得設定" });
   }
 });
 
@@ -40,11 +40,11 @@ router.get("/", async (req: Request, res: Response) => {
 router.put("/equipment", async (req: Request, res: Response) => {
   const { equipment } = req.body as { equipment: string[] };
   if (!Array.isArray(equipment)) {
-    res.status(400).json({ error: "equipment must be an array" });
+    res.status(400).json({ error: "equipment 必須為陣列" });
     return;
   }
   if (!equipment.every((e) => typeof e === "string")) {
-    res.status(400).json({ error: "equipment must be an array of strings" });
+    res.status(400).json({ error: "equipment 必須為字串陣列" });
     return;
   }
   const valid = equipment.filter((e) => PREDEFINED_EQUIPMENT.includes(e));
@@ -64,7 +64,7 @@ router.put("/equipment", async (req: Request, res: Response) => {
   } catch (e) {
     await client.query("ROLLBACK");
     console.error(e);
-    res.status(500).json({ error: "Failed to update equipment" });
+    res.status(500).json({ error: "無法更新廚具設定" });
   } finally {
     client.release();
   }
@@ -74,7 +74,7 @@ router.put("/equipment", async (req: Request, res: Response) => {
 router.post("/exclusions", async (req: Request, res: Response) => {
   const { name, type } = req.body as { name: string; type: string };
   if (!name?.trim() || !["allergen", "custom"].includes(type)) {
-    res.status(400).json({ error: "name and valid type (allergen|custom) required" });
+    res.status(400).json({ error: "name 與有效 type (allergen|custom) 為必填" });
     return;
   }
   try {
@@ -87,7 +87,7 @@ router.post("/exclusions", async (req: Request, res: Response) => {
     res.status(201).json({ name: name.trim(), type });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to add exclusion" });
+    res.status(500).json({ error: "無法新增排除食材" });
   }
 });
 
@@ -101,7 +101,7 @@ router.delete("/exclusions/:name", async (req: Request, res: Response) => {
     res.status(204).send();
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to remove exclusion" });
+    res.status(500).json({ error: "無法移除排除食材" });
   }
 });
 

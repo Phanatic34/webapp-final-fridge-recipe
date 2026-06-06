@@ -21,9 +21,9 @@ api.interceptors.response.use(
       const msg =
         data?.error ??
         err.message ??
-        "Request failed";
+        "請求失敗";
       return Promise.reject(new Error(msg));
     }
-    return Promise.reject(err instanceof Error ? err : new Error("Unknown error"));
+    return Promise.reject(err instanceof Error ? err : new Error("發生未知錯誤"));
   }
 );

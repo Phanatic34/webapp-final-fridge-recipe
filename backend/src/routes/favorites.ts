@@ -37,7 +37,7 @@ router.get("/", async (req: Request, res: Response) => {
     res.json({ recipes: result.rows.map(rowToResponse) });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to fetch favorites" });
+    res.status(500).json({ error: "無法取得收藏清單" });
   }
 });
 
@@ -45,7 +45,7 @@ router.get("/", async (req: Request, res: Response) => {
 router.post("/:recipeId", async (req: Request, res: Response) => {
   const recipeId = Number.parseInt(req.params.recipeId, 10);
   if (Number.isNaN(recipeId)) {
-    res.status(400).json({ error: "Invalid recipeId" });
+    res.status(400).json({ error: "無效的食譜 ID" });
     return;
   }
 
@@ -56,7 +56,7 @@ router.post("/:recipeId", async (req: Request, res: Response) => {
     );
 
     if (recipeResult.rows.length === 0) {
-      res.status(404).json({ error: "Recipe not found" });
+      res.status(404).json({ error: "找不到該食譜" });
       return;
     }
 
@@ -70,7 +70,7 @@ router.post("/:recipeId", async (req: Request, res: Response) => {
     res.status(201).json({ recipe: rowToResponse(recipeResult.rows[0]) });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to add favorite" });
+    res.status(500).json({ error: "無法新增收藏" });
   }
 });
 
@@ -78,7 +78,7 @@ router.post("/:recipeId", async (req: Request, res: Response) => {
 router.delete("/:recipeId", async (req: Request, res: Response) => {
   const recipeId = Number.parseInt(req.params.recipeId, 10);
   if (Number.isNaN(recipeId)) {
-    res.status(400).json({ error: "Invalid recipeId" });
+    res.status(400).json({ error: "無效的食譜 ID" });
     return;
   }
 
@@ -91,14 +91,14 @@ router.delete("/:recipeId", async (req: Request, res: Response) => {
     );
 
     if (result.rowCount === 0) {
-      res.status(404).json({ error: "Favorite not found" });
+      res.status(404).json({ error: "找不到該收藏項目" });
       return;
     }
 
-    res.json({ message: "Removed" });
+    res.json({ message: "已移除" });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to remove favorite" });
+    res.status(500).json({ error: "無法移除收藏" });
   }
 });
 

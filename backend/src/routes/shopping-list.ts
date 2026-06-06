@@ -31,7 +31,7 @@ router.get("/", async (req: Request, res: Response) => {
     res.json(result.rows);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to fetch shopping list" });
+    res.status(500).json({ error: "無法取得購物清單" });
   }
 });
 
@@ -85,7 +85,7 @@ router.post("/", async (req: Request, res: Response) => {
 router.post("/from-recipe/:recipeId", async (req: Request, res: Response) => {
   const recipeId = Number.parseInt(req.params.recipeId, 10);
   if (Number.isNaN(recipeId)) {
-    res.status(400).json({ error: "Invalid recipeId" });
+    res.status(400).json({ error: "無效的食譜 ID" });
     return;
   }
   try {
@@ -125,7 +125,7 @@ router.post("/from-recipe/:recipeId", async (req: Request, res: Response) => {
     res.status(201).json({ added: inserted.length, items: inserted });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to add items to shopping list" });
+    res.status(500).json({ error: "無法新增購物清單項目" });
   }
 });
 
@@ -139,7 +139,7 @@ router.delete("/clear-checked", async (req: Request, res: Response) => {
     res.status(204).send();
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to clear checked items" });
+    res.status(500).json({ error: "無法清除已勾選項目" });
   }
 });
 
@@ -147,17 +147,17 @@ router.delete("/clear-checked", async (req: Request, res: Response) => {
 router.patch("/:id", async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
+    res.status(400).json({ error: "無效的 ID" });
     return;
   }
   const { is_checked, quantity } = req.body as { is_checked?: unknown; quantity?: unknown };
 
   if (is_checked !== undefined && typeof is_checked !== "boolean") {
-    res.status(400).json({ error: "is_checked must be a boolean" });
+    res.status(400).json({ error: "is_checked 必須為布林值" });
     return;
   }
   if (quantity !== undefined && (typeof quantity !== "number" || quantity <= 0)) {
-    res.status(400).json({ error: "quantity must be a positive number" });
+    res.status(400).json({ error: "quantity 必須為正數" });
     return;
   }
 
@@ -167,7 +167,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
   if (quantity !== undefined)   { fields.push(`quantity = $${fields.length + 1}`);   values.push(quantity); }
 
   if (fields.length === 0) {
-    res.status(400).json({ error: "No fields to update" });
+    res.status(400).json({ error: "無可更新的欄位" });
     return;
   }
 
@@ -177,13 +177,13 @@ router.patch("/:id", async (req: Request, res: Response) => {
       [...values, id, req.userId]
     );
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Item not found" });
+      res.status(404).json({ error: "找不到該項目" });
       return;
     }
     res.json(result.rows[0]);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to update item" });
+    res.status(500).json({ error: "無法更新項目" });
   }
 });
 
@@ -191,7 +191,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
 router.delete("/:id", async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
+    res.status(400).json({ error: "無效的 ID" });
     return;
   }
   try {
@@ -202,7 +202,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
     res.status(204).send();
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to delete item" });
+    res.status(500).json({ error: "無法刪除項目" });
   }
 });
 
