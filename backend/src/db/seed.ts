@@ -1528,6 +1528,26 @@ async function seedIngredients(userId: string, items: IngredientSeed[]) {
   }
 }
 
+const IMG = "https://images.unsplash.com/";
+const Q   = "?w=800&h=500&fit=crop&auto=format";
+
+function getRecipeImageUrl(r: RecipeSeed): string {
+  const t = r.title;
+  if (t.includes("義大利麵") || t.includes("波納拉"))                                    return IMG + "photo-1556761223-4c4282c73f77" + Q;
+  if (t.includes("堡") || t.includes("三明治") || t.includes("BLT") || t.includes("法式吐司")) return IMG + "photo-1568901346375-23c9450c58cd" + Q;
+  if (t.includes("玉子燒") || r.cuisine === "japanese")                                  return IMG + "photo-1680137248903-7af5d51a3350" + Q;
+  if (t.includes("湯") || t.includes("火鍋") || t.includes("粥") || t.includes("薑母鴨") || t.includes("麻油雞")) return IMG + "photo-1665593998976-d957f2827fe7" + Q;
+  if (t.includes("炒飯") || t.includes("咖哩"))                                          return IMG + "photo-1603133872878-684f208fb84b" + Q;
+  if (t.includes("麵") || t.includes("炒米粉"))                                          return IMG + "photo-1631709497146-a239ef373cf1" + Q;
+  if (t.includes("蚵仔煎") || t.includes("清蒸魚") || t.includes("蝦仁") || t.includes("蛤蜊")) return IMG + "photo-1664774367243-18caa521fb96" + Q;
+  if (t.includes("豆腐") || t.includes("皮蛋"))                                          return IMG + "photo-1596352670192-5a95e357df7b" + Q;
+  if (t.includes("滷") || t.includes("紅燒") || t.includes("梅干") || t.includes("豉汁") || t.includes("三杯")) return IMG + "photo-1625477811233-044633d10dd1" + Q;
+  if (t.includes("炸") || t.includes("雞排") || t.includes("鹽酥") || t.includes("苦瓜釀") || t.includes("糖醋")) return IMG + "photo-1652209898504-ea7f96b44580" + Q;
+  if (t.includes("蒸蛋") || t.includes("炒蛋") || t.includes("煎蛋") || t.includes("菜脯蛋") || t.includes("滷蛋")) return IMG + "photo-1629180052394-bedb0e4445fd" + Q;
+  if (t.includes("空心菜") || t.includes("高麗菜") || t.includes("地瓜葉") || t.includes("豆芽") || t.includes("茄子") || t.includes("金針菇")) return IMG + "photo-1599297915779-0dadbd376d49" + Q;
+  return IMG + "photo-1564834724105-918b73d1b9e0" + Q;
+}
+
 async function seedRecipes(userId: string, recipeList: RecipeSeed[]) {
   await pool.query(`DELETE FROM recipe_ingredients WHERE recipe_id IN (SELECT id FROM recipes WHERE user_id = $1)`, [userId]);
   await pool.query(`DELETE FROM recipe_equipment   WHERE recipe_id IN (SELECT id FROM recipes WHERE user_id = $1)`, [userId]);
@@ -1535,9 +1555,9 @@ async function seedRecipes(userId: string, recipeList: RecipeSeed[]) {
 
   for (const r of recipeList) {
     const result = await pool.query<{ id: number }>(
-      `INSERT INTO recipes (user_id, title, description, cuisine, cooking_time, servings, difficulty, instructions)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-      [userId, r.title, r.description, r.cuisine, r.cooking_time, r.servings, r.difficulty, r.instructions]
+      `INSERT INTO recipes (user_id, title, description, cuisine, cooking_time, servings, difficulty, instructions, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+      [userId, r.title, r.description, r.cuisine, r.cooking_time, r.servings, r.difficulty, r.instructions, getRecipeImageUrl(r)]
     );
     const recipeId = result.rows[0].id;
     for (const ing of r.ingredients) {
