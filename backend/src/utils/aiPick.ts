@@ -51,6 +51,9 @@ ${recipeList}${userNeed}`;
   });
 
   const text = response.choices[0]?.message?.content?.trim() ?? "";
+  if (!text) {
+    throw new Error("AI returned empty response");
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
