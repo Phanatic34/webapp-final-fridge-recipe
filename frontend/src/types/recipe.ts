@@ -23,6 +23,7 @@ export type Recipe = {
 export type RecipeDetail = Recipe & {
   instructions: string | null;
   ingredients: RecipeIngredient[];
+  equipment: string[];
 };
 
 export type RecipeRecommendation = {

@@ -39,6 +39,7 @@ export type RecipeCreatePayload = {
   difficulty?: string;
   instructions?: string;
   ingredients: { name: string; quantity?: number | null; unit?: string; allergens?: string[] }[];
+  equipment?: string[];
 };
 
 export async function autoAllergens(

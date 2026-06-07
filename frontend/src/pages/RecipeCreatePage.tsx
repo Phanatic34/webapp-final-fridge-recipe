@@ -8,6 +8,7 @@ import { autoAllergens } from "../api/recipes";
 import { CUISINE_LABELS, DIFFICULTY_LABELS } from "../utils/labels";
 
 const ALLERGEN_OPTIONS = ["花生", "海鮮", "乳製品", "麩質", "蛋"] as const;
+const EQUIPMENT_OPTIONS = ["炒鍋", "平底鍋", "湯鍋", "電鍋", "烤箱", "微波爐", "氣炸鍋", "果汁機", "蒸鍋"] as const;
 
 type IngredientRow = { id: number; name: string; quantity: string; unit: string; allergens: string[] };
 
@@ -30,6 +31,7 @@ export default function RecipeCreatePage() {
   const [ingredients, setIngredients] = useState<IngredientRow[]>([
     { id: nextId++, name: "", quantity: "", unit: "", allergens: [] },
   ]);
+  const [equipment, setEquipment] = useState<string[]>([]);
   const [autoDetecting, setAutoDetecting] = useState<Record<number, boolean>>({});
   const [batchDetecting, setBatchDetecting] = useState(false);
 
@@ -66,6 +68,10 @@ export default function RecipeCreatePage() {
   }
   const [customInputs, setCustomInputs] = useState<Record<number, string>>({});
   const [showCustomInput, setShowCustomInput] = useState<Record<number, boolean>>({});
+
+  function toggleEquipment(name: string) {
+    setEquipment((prev) => prev.includes(name) ? prev.filter((e) => e !== name) : [...prev, name]);
+  }
 
   function addIngredientRow() {
     setIngredients((prev) => [...prev, { id: nextId++, name: "", quantity: "", unit: "", allergens: [] }]);
@@ -152,6 +158,7 @@ export default function RecipeCreatePage() {
         difficulty,
         instructions: instructions.trim() || undefined,
         ingredients: validIngredients,
+        equipment,
       },
       {
         onSuccess: (recipe) => {
@@ -264,6 +271,31 @@ export default function RecipeCreatePage() {
                   className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
                 />
               </div>
+            </div>
+          </section>
+
+          {/* 器具 */}
+          <section className="space-y-3 rounded-2xl border border-app-border bg-white p-5 shadow-sm">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">所需器具</h3>
+            <p className="text-xs text-app-muted">勾選這道食譜需要的器具，讓沒有該器具的使用者不會看到此食譜。</p>
+            <div className="flex flex-wrap gap-2">
+              {EQUIPMENT_OPTIONS.map((eq) => {
+                const selected = equipment.includes(eq);
+                return (
+                  <button
+                    key={eq}
+                    type="button"
+                    onClick={() => toggleEquipment(eq)}
+                    className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                      selected
+                        ? "border-app-border bg-app-surface text-app-primary"
+                        : "border-app-border bg-white text-app-muted hover:border-app-primary hover:text-app-primary"
+                    }`}
+                  >
+                    {selected ? "✓ " : ""}{eq}
+                  </button>
+                );
+              })}
             </div>
           </section>
 

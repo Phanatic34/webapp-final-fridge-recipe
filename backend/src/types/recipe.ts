@@ -62,6 +62,7 @@ export type RecipeResponse = {
 export type RecipeDetailResponse = RecipeResponse & {
   instructions: string | null;
   ingredients: RecipeIngredient[];
+  equipment: string[];
 };
 
 export type RecommendationResponse = {

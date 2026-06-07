@@ -189,6 +189,19 @@ export default function RecipeDetailPage() {
                   <span>{recipe.servings} 人份</span>
                 )}
               </div>
+              {recipe.equipment && recipe.equipment.length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-app-muted">所需器具：</span>
+                  {recipe.equipment.map((eq) => (
+                    <span
+                      key={eq}
+                      className="rounded-full border border-app-border bg-app-surface px-2.5 py-0.5 text-xs font-medium text-app-text"
+                    >
+                      {eq}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {recommendation && (

@@ -527,6 +527,16 @@ router.post("/", async (req: Request, res: Response) => {
       }
     }
 
+    const equipment = Array.isArray(req.body.equipment)
+      ? (req.body.equipment as unknown[]).filter((e): e is string => typeof e === "string")
+      : [];
+    for (const eq of equipment) {
+      await pool.query(
+        `INSERT INTO recipe_equipment (recipe_id, equipment_name) VALUES ($1, $2)`,
+        [recipe.id, eq]
+      );
+    }
+
     res.status(201).json({ recipe: rowToResponse(recipe) });
   } catch (e) {
     console.error(e);
@@ -590,6 +600,17 @@ router.put("/:id", async (req: Request, res: Response) => {
           );
         }
       }
+    }
+
+    await pool.query("DELETE FROM recipe_equipment WHERE recipe_id = $1", [id]);
+    const equipment = Array.isArray(req.body.equipment)
+      ? (req.body.equipment as unknown[]).filter((e): e is string => typeof e === "string")
+      : [];
+    for (const eq of equipment) {
+      await pool.query(
+        `INSERT INTO recipe_equipment (recipe_id, equipment_name) VALUES ($1, $2)`,
+        [id, eq]
+      );
     }
 
     res.json({ recipe: rowToResponse(result.rows[0]) });
@@ -674,15 +695,22 @@ router.get("/:id", async (req: Request, res: Response) => {
 
     const row = recipeResult.rows[0];
 
-    const ingResult = await pool.query<RecipeIngredientRow>(
-      `SELECT * FROM recipe_ingredients WHERE recipe_id = $1 ORDER BY id`,
-      [id]
-    );
+    const [ingResult, eqResult] = await Promise.all([
+      pool.query<RecipeIngredientRow>(
+        `SELECT * FROM recipe_ingredients WHERE recipe_id = $1 ORDER BY id`,
+        [id]
+      ),
+      pool.query<{ equipment_name: string }>(
+        `SELECT equipment_name FROM recipe_equipment WHERE recipe_id = $1 ORDER BY equipment_name`,
+        [id]
+      ),
+    ]);
 
     const detail: RecipeDetailResponse = {
       ...rowToResponse(row),
       instructions: row.instructions,
       ingredients: ingResult.rows.map(ingredientRowToResponse),
+      equipment: eqResult.rows.map((r) => r.equipment_name),
     };
 
     res.json({ recipe: detail });
