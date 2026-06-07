@@ -17,7 +17,7 @@ import type {
 const router = Router();
 
 
-function rowToResponse(row: RecipeRow): RecipeResponse {
+function rowToResponse(row: RecipeRow & { allergen_summary?: string[] }): RecipeResponse {
   return {
     id: row.id,
     title: row.title,
@@ -29,6 +29,7 @@ function rowToResponse(row: RecipeRow): RecipeResponse {
     difficulty: row.difficulty,
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
+    allergen_summary: row.allergen_summary ?? [],
   };
 }
 
@@ -616,8 +617,16 @@ router.get("/", async (req: Request, res: Response) => {
       where += ` AND LOWER(r.cuisine) = LOWER($${params.length})`;
     }
 
-    const result = await pool.query<RecipeRow>(
-      `SELECT r.* FROM recipes r ${where} ORDER BY r.title ASC`,
+    const result = await pool.query<RecipeRow & { allergen_summary: string[] }>(
+      `SELECT r.*,
+        ARRAY(
+          SELECT DISTINCT val
+          FROM recipe_ingredients ri,
+               unnest(ri.allergens) AS val
+          WHERE ri.recipe_id = r.id
+            AND val <> ''
+        ) AS allergen_summary
+       FROM recipes r ${where} ORDER BY r.title ASC`,
       params
     );
 

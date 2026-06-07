@@ -7,7 +7,7 @@ const router = Router();
 
 
 
-function rowToResponse(row: RecipeRow): RecipeResponse {
+function rowToResponse(row: RecipeRow & { allergen_summary?: string[] }): RecipeResponse {
   return {
     id: row.id,
     title: row.title,
@@ -19,6 +19,7 @@ function rowToResponse(row: RecipeRow): RecipeResponse {
     difficulty: row.difficulty,
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
+    allergen_summary: row.allergen_summary ?? [],
   };
 }
 
