@@ -412,7 +412,7 @@ export default function ShoppingListPage() {
             />
           </div>
           <div className="flex gap-3">
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex flex-1 flex-col gap-1 min-w-0">
               <label className="text-xs font-medium text-app-muted">數量（選填）</label>
               <input
                 type="number"
@@ -421,17 +421,17 @@ export default function ShoppingListPage() {
                 value={newQty}
                 onChange={(e) => setNewQty(e.target.value)}
                 placeholder="1"
-                className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
               />
             </div>
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex flex-1 flex-col gap-1 min-w-0">
               <label className="text-xs font-medium text-app-muted">單位（選填）</label>
               <input
                 type="text"
                 value={newUnit}
                 onChange={(e) => setNewUnit(e.target.value)}
                 placeholder="個、罐、g…"
-                className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+                className="w-full rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
               />
             </div>
           </div>
@@ -497,7 +497,7 @@ function quantityPayloadFromShoppingItem(item: {
 
   return {
     count_quantity: safeQty,
-    count_unit: COUNT_UNIT_MAP[unit] ?? "份",
+    count_unit: COUNT_UNIT_MAP[unit] ?? unit,
     measure_quantity: null,
     measure_unit: null,
   };
