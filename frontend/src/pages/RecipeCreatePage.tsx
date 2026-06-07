@@ -32,6 +32,7 @@ export default function RecipeCreatePage() {
     { id: nextId++, name: "", quantity: "", unit: "", allergens: [] },
   ]);
   const [equipment, setEquipment] = useState<string[]>([]);
+  const [attempted, setAttempted] = useState(false);
   const [autoDetecting, setAutoDetecting] = useState<Record<number, boolean>>({});
   const [batchDetecting, setBatchDetecting] = useState(false);
 
@@ -137,7 +138,10 @@ export default function RecipeCreatePage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setAttempted(true);
     if (!title.trim()) { toast.error("請填寫食譜名稱"); return; }
+    if (!ingredients.some((r) => r.name.trim())) { toast.error("請至少填寫一項食材"); return; }
+    if (!instructions.trim()) { toast.error("請填寫烹飪步驟"); return; }
 
     const validIngredients = ingredients
       .filter((r) => r.name.trim())
@@ -198,15 +202,21 @@ export default function RecipeCreatePage() {
             <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">基本資訊</h3>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-app-muted">食譜名稱 *</label>
+              <label className="text-xs font-medium text-app-muted">食譜名稱 <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="例：番茄炒蛋"
-                required
-                className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+                className={`rounded-lg border px-3 py-2 text-sm text-app-text focus:outline-none focus:ring-1 ${
+                  attempted && !title.trim()
+                    ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                    : "border-app-border focus:border-app-primary focus:ring-app-primary"
+                }`}
               />
+              {attempted && !title.trim() && (
+                <p className="text-xs text-red-500">請填寫食譜名稱</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
@@ -301,7 +311,10 @@ export default function RecipeCreatePage() {
 
           {/* 食材 */}
           <section className="space-y-3 rounded-2xl border border-app-border bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">食材清單</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">食材清單 <span className="text-red-500">*</span></h3>
+            {attempted && !ingredients.some((r) => r.name.trim()) && (
+              <p className="text-xs text-red-500">請至少填寫一項食材名稱</p>
+            )}
 
             <div className="space-y-3">
               {ingredients.map((row, i) => (
@@ -452,14 +465,21 @@ export default function RecipeCreatePage() {
 
           {/* 步驟 */}
           <section className="space-y-3 rounded-2xl border border-app-border bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">烹飪步驟</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">烹飪步驟 <span className="text-red-500">*</span></h3>
             <textarea
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               rows={6}
               placeholder={"1. 將番茄切丁。\n2. 打散雞蛋加少許鹽。\n3. 熱鍋下油，炒熟雞蛋後盛起。\n4. 下番茄炒至出汁，加糖調味。\n5. 放回雞蛋拌勻即可。"}
-              className="w-full resize-none rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              className={`w-full resize-none rounded-lg border px-3 py-2 text-sm text-app-text focus:outline-none focus:ring-1 ${
+                attempted && !instructions.trim()
+                  ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                  : "border-app-border focus:border-app-primary focus:ring-app-primary"
+              }`}
             />
+            {attempted && !instructions.trim() && (
+              <p className="text-xs text-red-500">請填寫烹飪步驟</p>
+            )}
           </section>
 
           {/* 送出 */}

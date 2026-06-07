@@ -38,6 +38,7 @@ export default function RecipeEditPage() {
     { id: nextId++, name: "", quantity: "", unit: "", allergens: [] },
   ]);
   const [equipment, setEquipment] = useState<string[]>([]);
+  const [attempted, setAttempted] = useState(false);
   const [autoDetecting, setAutoDetecting] = useState<Record<number, boolean>>({});
   const [batchDetecting, setBatchDetecting] = useState(false);
 
@@ -164,7 +165,10 @@ export default function RecipeEditPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setAttempted(true);
     if (!title.trim()) { toast.error("請填寫食譜名稱"); return; }
+    if (!ingredients.some((r) => r.name.trim())) { toast.error("請至少填寫一項食材"); return; }
+    if (!instructions.trim()) { toast.error("請填寫烹飪步驟"); return; }
 
     const validIngredients = ingredients
       .filter((r) => r.name.trim())
@@ -250,14 +254,20 @@ export default function RecipeEditPage() {
             <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">基本資訊</h3>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-app-muted">食譜名稱 *</label>
+              <label className="text-xs font-medium text-app-muted">食譜名稱 <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                required
-                className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+                className={`rounded-lg border px-3 py-2 text-sm text-app-text focus:outline-none focus:ring-1 ${
+                  attempted && !title.trim()
+                    ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                    : "border-app-border focus:border-app-primary focus:ring-app-primary"
+                }`}
               />
+              {attempted && !title.trim() && (
+                <p className="text-xs text-red-500">請填寫食譜名稱</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
@@ -349,7 +359,10 @@ export default function RecipeEditPage() {
 
           {/* 食材 */}
           <section className="space-y-3 rounded-2xl border border-app-border bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">食材清單</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">食材清單 <span className="text-red-500">*</span></h3>
+            {attempted && !ingredients.some((r) => r.name.trim()) && (
+              <p className="text-xs text-red-500">請至少填寫一項食材名稱</p>
+            )}
 
             <div className="space-y-3">
               {ingredients.map((row, i) => (
@@ -481,13 +494,20 @@ export default function RecipeEditPage() {
 
           {/* 步驟 */}
           <section className="space-y-3 rounded-2xl border border-app-border bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">烹飪步驟</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-app-muted">烹飪步驟 <span className="text-red-500">*</span></h3>
             <textarea
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               rows={6}
-              className="w-full resize-none rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              className={`w-full resize-none rounded-lg border px-3 py-2 text-sm text-app-text focus:outline-none focus:ring-1 ${
+                attempted && !instructions.trim()
+                  ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                  : "border-app-border focus:border-app-primary focus:ring-app-primary"
+              }`}
             />
+            {attempted && !instructions.trim() && (
+              <p className="text-xs text-red-500">請填寫烹飪步驟</p>
+            )}
           </section>
 
           <div className="flex gap-3 pb-8">
