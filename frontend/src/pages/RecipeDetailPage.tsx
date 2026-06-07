@@ -260,6 +260,27 @@ export default function RecipeDetailPage() {
               <h3 className="mb-3 font-['Noto_Serif_TC'] text-lg font-semibold text-app-text">
                 食材
               </h3>
+              {(() => {
+                const allAllergens = [
+                  ...new Set(
+                    recipe.ingredients.flatMap((ing) => ing.allergens ?? [])
+                  ),
+                ];
+                return allAllergens.length > 0 ? (
+                  <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2">
+                    <span className="text-sm">⚠️</span>
+                    <span className="text-xs font-medium text-orange-700">含有：</span>
+                    {allAllergens.map((a) => (
+                      <span
+                        key={a}
+                        className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-app-danger ring-1 ring-red-100"
+                      >
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
               {hasMissingIngredients && (
                 <div className="mb-4">
                   <button
