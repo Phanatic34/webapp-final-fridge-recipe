@@ -29,6 +29,8 @@ export default function RecipeEditPage() {
   const [initialized, setInitialized] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [imagePreviewError, setImagePreviewError] = useState(false);
   const [cuisine, setCuisine] = useState("");
   const [cookingTime, setCookingTime] = useState("");
   const [servings, setServings] = useState("2");
@@ -80,6 +82,7 @@ export default function RecipeEditPage() {
     if (recipe && !initialized) {
       setTitle(recipe.title);
       setDescription(recipe.description ?? "");
+      setImageUrl(recipe.image_url ?? "");
       setCuisine(recipe.cuisine ?? "");
       setCookingTime(recipe.cooking_time?.toString() ?? "");
       setServings(recipe.servings?.toString() ?? "2");
@@ -185,6 +188,7 @@ export default function RecipeEditPage() {
         payload: {
           title: title.trim(),
           description: description.trim() || undefined,
+          image_url: imageUrl.trim() || null,
           cuisine: cuisine || undefined,
           cooking_time: cookingTime ? parseInt(cookingTime) || null : null,
           servings: servings ? parseInt(servings) || 2 : 2,
@@ -278,6 +282,31 @@ export default function RecipeEditPage() {
                 rows={2}
                 className="resize-none rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
               />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-app-muted">食譜圖片網址</label>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => { setImageUrl(e.target.value); setImagePreviewError(false); }}
+                placeholder="https://example.com/image.jpg"
+                className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              />
+              {imageUrl.trim() && (
+                <div className="mt-1">
+                  {imagePreviewError ? (
+                    <p className="text-xs text-red-500">⚠ 無法載入圖片，請確認網址是否正確</p>
+                  ) : (
+                    <img
+                      src={imageUrl.trim()}
+                      alt="預覽"
+                      className="h-20 w-full rounded-lg object-cover"
+                      onError={() => setImagePreviewError(true)}
+                    />
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -520,7 +549,7 @@ export default function RecipeEditPage() {
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || updateRecipe.isPending}
+              disabled={!title.trim() || !instructions.trim() || !ingredients.some((r) => r.name.trim()) || updateRecipe.isPending}
               className="flex-1 rounded-xl bg-app-primary py-2.5 text-sm font-medium text-white hover:bg-app-primary-hover transition disabled:opacity-50"
             >
               {updateRecipe.isPending ? "儲存中…" : "儲存變更"}
