@@ -4,6 +4,7 @@ import { pool } from "../db/pool.js";
 import { computeExpiryMeta } from "../utils/expiry.js";
 import { generateAiExplanation } from "../utils/llmExplanation.js";
 import { autoDetectAllergens } from "../utils/allergenMap.js";
+import { generateAiPick } from "../utils/aiPick.js";
 import type {
   RecipeRow,
   RecipeIngredientRow,
@@ -389,6 +390,35 @@ router.get("/recommended", async (req: Request, res: Response) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "無法計算推薦食譜" });
+  }
+});
+
+/** POST /api/recipes/ai-pick */
+router.post("/ai-pick", async (req: Request, res: Response) => {
+  const { recommendations, userPrompt } = req.body as {
+    recommendations?: unknown;
+    userPrompt?: unknown;
+  };
+
+  if (!Array.isArray(recommendations) || recommendations.length === 0) {
+    res.status(400).json({ error: "recommendations 必須為非空陣列" });
+    return;
+  }
+
+  const prompt =
+    typeof userPrompt === "string" && userPrompt.trim().length > 0
+      ? userPrompt.trim().slice(0, 100)
+      : undefined;
+
+  try {
+    const result = await generateAiPick(
+      recommendations as import("../types/recipe.js").RecommendationResponse[],
+      prompt
+    );
+    res.json(result);
+  } catch (e) {
+    console.error("[AI pick error]", e);
+    res.status(500).json({ error: "AI 精選暫時無法使用" });
   }
 });
 
