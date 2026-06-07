@@ -1,4 +1,4 @@
-import type { Recipe, RecipeDetail, RecipeRecommendation } from "../types/recipe";
+import type { Recipe, RecipeDetail, RecipeRecommendation, AiPickResponse } from "../types/recipe";
 import { api } from "./client";
 
 export type RecipeListParams = {
@@ -76,5 +76,16 @@ export async function fetchRecommendedRecipes(
   const { data } = await api.get<{ recommendations: RecipeRecommendation[] }>(
     `/api/recipes/recommended${q ? `?${q}` : ""}`
   );
+  return data;
+}
+
+export async function fetchAiPick(
+  recommendations: RecipeRecommendation[],
+  userPrompt?: string
+): Promise<AiPickResponse> {
+  const { data } = await api.post<AiPickResponse>("/api/recipes/ai-pick", {
+    recommendations: recommendations.slice(0, 8),
+    userPrompt: userPrompt ?? "",
+  });
   return data;
 }
