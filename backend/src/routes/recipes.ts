@@ -406,6 +406,14 @@ router.post("/ai-pick", async (req: Request, res: Response) => {
     return;
   }
 
+  const isValidShape = (recommendations as unknown[]).every(
+    (r) => r && typeof r === "object" && typeof (r as Record<string, unknown>).recipe === "object"
+  );
+  if (!isValidShape) {
+    res.status(400).json({ error: "recommendations 格式錯誤" });
+    return;
+  }
+
   const prompt =
     typeof userPrompt === "string" && userPrompt.trim().length > 0
       ? userPrompt.trim().slice(0, 100)
@@ -646,8 +654,16 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 
   try {
-    const recipeResult = await pool.query<RecipeRow>(
-      `SELECT * FROM recipes WHERE id = $1 AND user_id = $2`,
+    const recipeResult = await pool.query<RecipeRow & { allergen_summary: string[] }>(
+      `SELECT r.*,
+        ARRAY(
+          SELECT DISTINCT val
+          FROM recipe_ingredients ri,
+               unnest(ri.allergens) AS val
+          WHERE ri.recipe_id = r.id
+            AND val <> ''
+        ) AS allergen_summary
+       FROM recipes r WHERE r.id = $1 AND r.user_id = $2`,
       [id, req.userId]
     );
 
