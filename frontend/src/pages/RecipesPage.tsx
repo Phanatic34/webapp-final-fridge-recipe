@@ -361,6 +361,8 @@ export default function RecipesPage() {
           </div>
         </div>
 
+        <p className="text-xs text-app-muted text-right -mt-3">＊圖片僅供參考</p>
+
         {isError && (
           <div
             className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
