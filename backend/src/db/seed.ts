@@ -1529,24 +1529,86 @@ async function seedIngredients(userId: string, items: IngredientSeed[]) {
   }
 }
 
-const IMG = "https://images.unsplash.com/";
-const Q   = "?w=800&h=500&fit=crop&auto=format";
+const RECIPE_IMAGES: Record<string, string> = {
+  "番茄炒蛋": "/images/recipes/番茄炒蛋.jpg",
+  "菠菜煎蛋": "/images/recipes/菠菜煎蛋.jpg",
+  "蛋炒飯": "/images/recipes/蛋炒飯.jpg",
+  "蒜香橄欖油義大利麵": "/images/recipes/蒜香橄欖油義大利麵.jpg",
+  "味噌湯": "/images/recipes/味噌湯.jpg",
+  "泡菜炒飯": "/images/recipes/泡菜炒飯.jpg",
+  "雞肉炒時蔬": "/images/recipes/雞肉炒時蔬.jpg",
+  "泰式打拋豬": "/images/recipes/泰式打拋豬.jpg",
+  "奶油蘑菇義大利麵": "/images/recipes/奶油蘑菇義大利麵.jpg",
+  "日式咖哩飯": "/images/recipes/日式咖哩飯.jpg",
+  "三杯雞": "/images/recipes/三杯雞.jpg",
+  "牛奶法式吐司": "/images/recipes/牛奶法式吐司.jpg",
+  "滷肉飯": "/images/recipes/滷肉飯.jpg",
+  "麻油雞": "/images/recipes/麻油雞.jpg",
+  "紅燒牛肉麵": "/images/recipes/紅燒牛肉麵.jpg",
+  "蚵仔煎": "/images/recipes/蚵仔煎.jpg",
+  "炒米粉": "/images/recipes/炒米粉.jpg",
+  "蔥油雞": "/images/recipes/蔥油雞.jpg",
+  "客家小炒": "/images/recipes/客家小炒.jpg",
+  "糖醋排骨": "/images/recipes/糖醋排骨.jpg",
+  "紅燒五花肉": "/images/recipes/紅燒五花肉.jpg",
+  "清蒸魚": "/images/recipes/清蒸魚.jpg",
+  "蒜炒空心菜": "/images/recipes/蒜炒空心菜.jpg",
+  "菜脯蛋": "/images/recipes/菜脯蛋.jpg",
+  "排骨湯": "/images/recipes/排骨湯.jpg",
+  "苦瓜排骨湯": "/images/recipes/苦瓜排骨湯.jpg",
+  "紅燒豆腐": "/images/recipes/紅燒豆腐.jpg",
+  "蒜炒高麗菜": "/images/recipes/蒜炒高麗菜.jpg",
+  "炸排骨": "/images/recipes/炸排骨.jpg",
+  "蚵仔麵線": "/images/recipes/蚵仔麵線.jpg",
+  "蒜炒地瓜葉": "/images/recipes/蒜炒地瓜葉.jpg",
+  "蒸蛋": "/images/recipes/蒸蛋.jpg",
+  "炒豆芽": "/images/recipes/炒豆芽.jpg",
+  "冬瓜蛤蜊湯": "/images/recipes/冬瓜蛤蜊湯.jpg",
+  "炒茄子": "/images/recipes/炒茄子.jpg",
+  "蓮藕排骨湯": "/images/recipes/蓮藕排骨湯.jpg",
+  "蒸肉餅": "/images/recipes/蒸肉餅.jpg",
+  "芋頭排骨湯": "/images/recipes/芋頭排骨湯.jpg",
+  "台式鹹粥": "/images/recipes/台式鹹粥.jpg",
+  "蝦仁炒蛋": "/images/recipes/蝦仁炒蛋.jpg",
+  "蒜苗炒肉片": "/images/recipes/蒜苗炒肉片.jpg",
+  "皮蛋豆腐": "/images/recipes/皮蛋豆腐.jpg",
+  "蒜泥白肉": "/images/recipes/蒜泥白肉.jpg",
+  "台式炒麵": "/images/recipes/台式炒麵.jpg",
+  "苦瓜釀肉": "/images/recipes/苦瓜釀肉.jpg",
+  "貢丸湯": "/images/recipes/貢丸湯.jpg",
+  "豉汁蒸排骨": "/images/recipes/豉汁蒸排骨.jpg",
+  "雞排": "/images/recipes/雞排.jpg",
+  "滷豬腳": "/images/recipes/滷豬腳.jpg",
+  "家常豆腐": "/images/recipes/家常豆腐.jpg",
+  "薑母鴨": "/images/recipes/薑母鴨.jpg",
+  "排骨麵": "/images/recipes/排骨麵.jpg",
+  "蘆筍炒蝦仁": "/images/recipes/蘆筍炒蝦仁.jpg",
+  "鹽酥雞": "/images/recipes/鹽酥雞.jpg",
+  "梅干扣肉": "/images/recipes/梅干扣肉.jpg",
+  "滷蛋": "/images/recipes/滷蛋.jpg",
+  "台式蛋花湯": "/images/recipes/台式蛋花湯.jpg",
+  "肉燥麵": "/images/recipes/肉燥麵.jpg",
+  "豆腐清湯": "/images/recipes/豆腐清湯.jpg",
+  "炒金針菇": "/images/recipes/炒金針菇.jpg",
+  "滷雞翅": "/images/recipes/滷雞翅.jpg",
+  "蔥油餅": "/images/recipes/蔥油餅.jpg",
+  "酸菜炒肉絲": "/images/recipes/酸菜炒肉絲.jpg",
+  "豆腐蔬菜火鍋": "/images/recipes/豆腐蔬菜火鍋.jpg",
+  "炒豬肝": "/images/recipes/炒豬肝.jpg",
+  "鳳梨炒飯": "/images/recipes/鳳梨炒飯.jpg",
+  "蒜油菠菜": "/images/recipes/蒜油菠菜.jpg",
+  "味噌豆腐湯": "/images/recipes/味噌豆腐湯.jpg",
+  "玉子燒": "/images/recipes/玉子燒.jpg",
+  "蔥爆豬肉": "/images/recipes/蔥爆豬肉.jpg",
+  "培根蛋波納拉義大利麵": "/images/recipes/培根蛋波納拉義大利麵.jpg",
+  "BLT 三明治": "/images/recipes/BLT 三明治.jpg",
+  "經典牛肉堡": "/images/recipes/經典牛肉堡.jpg",
+  "美式培根炒蛋": "/images/recipes/美式培根炒蛋.jpg",
+  "番茄羅勒義大利麵": "/images/recipes/番茄羅勒義大利麵.jpg",
+};
 
 function getRecipeImageUrl(r: RecipeSeed): string {
-  const t = r.title;
-  if (t.includes("義大利麵") || t.includes("波納拉"))                                    return IMG + "photo-1556761223-4c4282c73f77" + Q;
-  if (t.includes("堡") || t.includes("三明治") || t.includes("BLT") || t.includes("法式吐司")) return IMG + "photo-1568901346375-23c9450c58cd" + Q;
-  if (t.includes("玉子燒") || r.cuisine === "japanese")                                  return IMG + "photo-1680137248903-7af5d51a3350" + Q;
-  if (t.includes("湯") || t.includes("火鍋") || t.includes("粥") || t.includes("薑母鴨") || t.includes("麻油雞")) return IMG + "photo-1665593998976-d957f2827fe7" + Q;
-  if (t.includes("炒飯") || t.includes("咖哩"))                                          return IMG + "photo-1603133872878-684f208fb84b" + Q;
-  if (t.includes("麵") || t.includes("炒米粉"))                                          return IMG + "photo-1631709497146-a239ef373cf1" + Q;
-  if (t.includes("蚵仔煎") || t.includes("清蒸魚") || t.includes("蝦仁") || t.includes("蛤蜊")) return IMG + "photo-1664774367243-18caa521fb96" + Q;
-  if (t.includes("豆腐") || t.includes("皮蛋"))                                          return IMG + "photo-1596352670192-5a95e357df7b" + Q;
-  if (t.includes("滷") || t.includes("紅燒") || t.includes("梅干") || t.includes("豉汁") || t.includes("三杯")) return IMG + "photo-1625477811233-044633d10dd1" + Q;
-  if (t.includes("炸") || t.includes("雞排") || t.includes("鹽酥") || t.includes("苦瓜釀") || t.includes("糖醋")) return IMG + "photo-1652209898504-ea7f96b44580" + Q;
-  if (t.includes("蒸蛋") || t.includes("炒蛋") || t.includes("煎蛋") || t.includes("菜脯蛋") || t.includes("滷蛋")) return IMG + "photo-1629180052394-bedb0e4445fd" + Q;
-  if (t.includes("空心菜") || t.includes("高麗菜") || t.includes("地瓜葉") || t.includes("豆芽") || t.includes("茄子") || t.includes("金針菇")) return IMG + "photo-1599297915779-0dadbd376d49" + Q;
-  return IMG + "photo-1564834724105-918b73d1b9e0" + Q;
+  return RECIPE_IMAGES[r.title] ?? "/images/recipes/番茄炒蛋.jpg";
 }
 
 async function seedRecipes(userId: string, recipeList: RecipeSeed[]) {
