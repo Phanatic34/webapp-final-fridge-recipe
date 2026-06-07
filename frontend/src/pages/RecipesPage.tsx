@@ -229,6 +229,7 @@ export default function RecipesPage() {
   const [cuisine, setCuisine] = useState("all");
   const [maxTime, setMaxTime] = useState<number | null>(null);
   const [mode, setMode] = useState<"recommended" | "all">("recommended");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: favoritesData } = useFavoritesList();
   const favoriteIds = useMemo(() => new Set((favoritesData ?? []).map((r) => r.id)), [favoritesData]);
@@ -255,9 +256,18 @@ export default function RecipesPage() {
 
   const recommendations = recData?.recommendations ?? [];
   const visible = useMemo(() => {
-    if (cuisine === "all") return recommendations;
-    return recommendations.filter((r) => r.recipe.cuisine === cuisine);
-  }, [recommendations, cuisine]);
+    const q = searchQuery.toLowerCase();
+    return recommendations.filter(
+      (r) =>
+        (cuisine === "all" || r.recipe.cuisine === cuisine) &&
+        (!q || r.recipe.title.toLowerCase().includes(q))
+    );
+  }, [recommendations, cuisine, searchQuery]);
+
+  const filteredAll = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return (allData ?? []).filter((r) => !q || r.title.toLowerCase().includes(q));
+  }, [allData, searchQuery]);
 
   const isLoading = mode === "recommended" ? recLoading : allLoading;
   const isError = mode === "recommended" ? recError : allError;
@@ -297,6 +307,17 @@ export default function RecipesPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="search" className="text-xs font-medium uppercase text-app-muted">搜尋</label>
+              <input
+                id="search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="輸入食譜名稱…"
+                className="rounded-lg border border-app-border bg-white px-3 py-2 text-sm shadow-sm focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
+              />
+            </div>
             <div className="flex flex-col gap-1">
               <label
                 htmlFor="cuisine"
@@ -393,7 +414,7 @@ export default function RecipesPage() {
           </div>
         )}
 
-        {!isLoading && !isError && mode === "all" && (allData ?? []).length === 0 && (
+        {!isLoading && !isError && mode === "all" && filteredAll.length === 0 && (
           <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-app-border py-16 text-center">
             <p className="text-app-muted">找不到食譜。</p>
           </div>
@@ -427,7 +448,7 @@ export default function RecipesPage() {
             animate="show"
             variants={{ show: { transition: { staggerChildren: 0.14 } } }}
           >
-            {(allData ?? []).map((recipe) => (
+            {filteredAll.map((recipe) => (
               <motion.div
                 key={recipe.id}
                 variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 180, damping: 20 } } }}
