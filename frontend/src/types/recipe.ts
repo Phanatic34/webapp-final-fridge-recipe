@@ -17,6 +17,7 @@ export type Recipe = {
   difficulty: string | null;
   created_at: string;
   updated_at: string;
+  allergen_summary: string[];
 };
 
 export type RecipeDetail = Recipe & {
@@ -39,4 +40,9 @@ export type RecipeRecommendation = {
   near_expiry_ingredients: string[];
   explanation: string[];
   ai_explanation: string;
+};
+
+export type AiPickResponse = {
+  picked_id: number;
+  explanation: string;
 };

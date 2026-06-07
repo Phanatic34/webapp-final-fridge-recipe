@@ -4,6 +4,7 @@ import { pool } from "../db/pool.js";
 import { computeExpiryMeta } from "../utils/expiry.js";
 import { generateAiExplanation } from "../utils/llmExplanation.js";
 import { autoDetectAllergens } from "../utils/allergenMap.js";
+import { generateAiPick } from "../utils/aiPick.js";
 import type {
   RecipeRow,
   RecipeIngredientRow,
@@ -16,7 +17,7 @@ import type {
 const router = Router();
 
 
-function rowToResponse(row: RecipeRow): RecipeResponse {
+function rowToResponse(row: RecipeRow & { allergen_summary?: string[] }): RecipeResponse {
   return {
     id: row.id,
     title: row.title,
@@ -28,6 +29,7 @@ function rowToResponse(row: RecipeRow): RecipeResponse {
     difficulty: row.difficulty,
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
+    allergen_summary: row.allergen_summary ?? [],
   };
 }
 
@@ -392,6 +394,43 @@ router.get("/recommended", async (req: Request, res: Response) => {
   }
 });
 
+/** POST /api/recipes/ai-pick */
+router.post("/ai-pick", async (req: Request, res: Response) => {
+  const { recommendations, userPrompt } = req.body as {
+    recommendations?: unknown;
+    userPrompt?: unknown;
+  };
+
+  if (!Array.isArray(recommendations) || recommendations.length === 0) {
+    res.status(400).json({ error: "recommendations 必須為非空陣列" });
+    return;
+  }
+
+  const isValidShape = (recommendations as unknown[]).every(
+    (r) => r && typeof r === "object" && typeof (r as Record<string, unknown>).recipe === "object"
+  );
+  if (!isValidShape) {
+    res.status(400).json({ error: "recommendations 格式錯誤" });
+    return;
+  }
+
+  const prompt =
+    typeof userPrompt === "string" && userPrompt.trim().length > 0
+      ? userPrompt.trim().slice(0, 100)
+      : undefined;
+
+  try {
+    const result = await generateAiPick(
+      recommendations as import("../types/recipe.js").RecommendationResponse[],
+      prompt
+    );
+    res.json(result);
+  } catch (e) {
+    console.error("[AI pick error]", e);
+    res.status(500).json({ error: "AI 精選暫時無法使用" });
+  }
+});
+
 /** POST /api/recipes/auto-allergens */
 router.post("/auto-allergens", async (req: Request, res: Response) => {
   const { name } = req.body as { name?: unknown };
@@ -586,8 +625,16 @@ router.get("/", async (req: Request, res: Response) => {
       where += ` AND LOWER(r.cuisine) = LOWER($${params.length})`;
     }
 
-    const result = await pool.query<RecipeRow>(
-      `SELECT r.* FROM recipes r ${where} ORDER BY r.title ASC`,
+    const result = await pool.query<RecipeRow & { allergen_summary: string[] }>(
+      `SELECT r.*,
+        ARRAY(
+          SELECT DISTINCT val
+          FROM recipe_ingredients ri,
+               unnest(ri.allergens) AS val
+          WHERE ri.recipe_id = r.id
+            AND val <> ''
+        ) AS allergen_summary
+       FROM recipes r ${where} ORDER BY r.title ASC`,
       params
     );
 
@@ -607,8 +654,16 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 
   try {
-    const recipeResult = await pool.query<RecipeRow>(
-      `SELECT * FROM recipes WHERE id = $1 AND user_id = $2`,
+    const recipeResult = await pool.query<RecipeRow & { allergen_summary: string[] }>(
+      `SELECT r.*,
+        ARRAY(
+          SELECT DISTINCT val
+          FROM recipe_ingredients ri,
+               unnest(ri.allergens) AS val
+          WHERE ri.recipe_id = r.id
+            AND val <> ''
+        ) AS allergen_summary
+       FROM recipes r WHERE r.id = $1 AND r.user_id = $2`,
       [id, req.userId]
     );
 

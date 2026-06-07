@@ -56,6 +56,7 @@ export type RecipeResponse = {
   difficulty: string | null;
   created_at: string;
   updated_at: string;
+  allergen_summary: string[];
 };
 
 export type RecipeDetailResponse = RecipeResponse & {

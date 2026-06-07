@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { Layout } from "../components/Layout";
 import { ProgressRing } from "../components/ProgressRing";
+import { AiPickBanner } from "../components/AiPickBanner";
 import { useRecommendedRecipesList, useRecipesList } from "../hooks/useRecipes";
 import { useAddFavorite, useFavoritesList, useRemoveFavorite } from "../hooks/useFavorites";
 import type { Recipe, RecipeRecommendation } from "../types/recipe";
@@ -89,6 +90,18 @@ function AllRecipeCard({ recipe, favorited, onToggleFavorite }: { recipe: Recipe
         </div>
         {recipe.description && (
           <p className="line-clamp-2 text-sm text-app-muted">{recipe.description}</p>
+        )}
+        {recipe.allergen_summary && recipe.allergen_summary.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-1">
+            {recipe.allergen_summary.map((a) => (
+              <span
+                key={a}
+                className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-app-danger ring-1 ring-red-100"
+              >
+                {a}
+              </span>
+            ))}
+          </div>
         )}
         <div className="mt-auto flex flex-nowrap items-center gap-2 overflow-hidden pt-2">
           <DifficultyBadge difficulty={recipe.difficulty} />
@@ -185,6 +198,18 @@ function RecommendationCard({ rec, favorited, onToggleFavorite }: { rec: RecipeR
           </div>
         )}
 
+        {rec.recipe.allergen_summary && rec.recipe.allergen_summary.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-1">
+            {rec.recipe.allergen_summary.map((a) => (
+              <span
+                key={a}
+                className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-app-danger ring-1 ring-red-100"
+              >
+                {a}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-auto flex flex-nowrap items-center gap-3 overflow-hidden pt-3">
           <ProgressRing ratio={rec.match_ratio} size={44} />
           {rec.recipe.cooking_time !== null && (
@@ -374,6 +399,9 @@ export default function RecipesPage() {
           </div>
         )}
 
+        {!isLoading && !isError && mode === "recommended" && visible.length > 0 && (
+          <AiPickBanner recommendations={visible} />
+        )}
         {!isLoading && !isError && mode === "recommended" && visible.length > 0 && (
           <motion.div
             className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"

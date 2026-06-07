@@ -31,6 +31,39 @@ export default function RecipeCreatePage() {
     { id: nextId++, name: "", quantity: "", unit: "", allergens: [] },
   ]);
   const [autoDetecting, setAutoDetecting] = useState<Record<number, boolean>>({});
+  const [batchDetecting, setBatchDetecting] = useState(false);
+
+  async function handleBatchAutoDetect() {
+    const targets = ingredients.filter(
+      (r) => r.name.trim() && r.allergens.length === 0
+    );
+    if (targets.length === 0) {
+      toast.info("所有有名稱的食材已有過敏原資訊");
+      return;
+    }
+    setBatchDetecting(true);
+    let successCount = 0;
+    let errorCount = 0;
+    await Promise.all(
+      targets.map(async (row) => {
+        try {
+          const { allergens } = await autoAllergens(row.name.trim());
+          setIngredients((prev) =>
+            prev.map((r) => (r.id === row.id ? { ...r, allergens } : r))
+          );
+          successCount++;
+        } catch {
+          errorCount++;
+        }
+      })
+    );
+    setBatchDetecting(false);
+    if (errorCount === 0) {
+      toast.success(`已偵測 ${successCount} 項食材的過敏原`);
+    } else {
+      toast.warning(`已偵測 ${successCount} 項，${errorCount} 項失敗`);
+    }
+  }
   const [customInputs, setCustomInputs] = useState<Record<number, string>>({});
   const [showCustomInput, setShowCustomInput] = useState<Record<number, boolean>>({});
 
@@ -374,6 +407,14 @@ export default function RecipeCreatePage() {
                 <line x1="12" y1="4" x2="12" y2="20" /><line x1="4" y1="12" x2="20" y2="12" />
               </svg>
               新增食材
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleBatchAutoDetect()}
+              disabled={batchDetecting}
+              className="flex items-center gap-1.5 text-sm text-app-muted hover:text-app-primary transition disabled:opacity-40"
+            >
+              <span>{batchDetecting ? "偵測中…" : "🔍 一鍵偵測所有過敏原"}</span>
             </button>
           </section>
 
