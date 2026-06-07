@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import { pool } from "./pool.js";
+import { lookupAllergens } from "../utils/allergenMap.js";
 
 dotenv.config();
 
@@ -1561,9 +1562,10 @@ async function seedRecipes(userId: string, recipeList: RecipeSeed[]) {
     );
     const recipeId = result.rows[0].id;
     for (const ing of r.ingredients) {
+      const allergens = lookupAllergens(ing.name) ?? [];
       await pool.query(
-        `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit) VALUES ($1, $2, $3, $4)`,
-        [recipeId, ing.name, ing.quantity, ing.unit]
+        `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit, allergens) VALUES ($1, $2, $3, $4, $5)`,
+        [recipeId, ing.name, ing.quantity, ing.unit, allergens]
       );
     }
 
