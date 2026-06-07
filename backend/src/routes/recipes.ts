@@ -447,6 +447,7 @@ router.post("/", async (req: Request, res: Response) => {
   const {
     title,
     description,
+    image_url,
     cuisine,
     cooking_time,
     servings,
@@ -456,6 +457,7 @@ router.post("/", async (req: Request, res: Response) => {
   } = req.body as {
     title?: unknown;
     description?: unknown;
+    image_url?: unknown;
     cuisine?: unknown;
     cooking_time?: unknown;
     servings?: unknown;
@@ -477,16 +479,22 @@ router.post("/", async (req: Request, res: Response) => {
     servings !== undefined && servings !== "" && servings !== null
       ? Number(servings)
       : 2;
+  const imageUrl =
+    typeof image_url === "string" && image_url.trim() ? image_url.trim() : null;
 
+  const client = await pool.connect();
   try {
-    const recipeResult = await pool.query<RecipeRow>(
-      `INSERT INTO recipes (user_id, title, description, cuisine, cooking_time, servings, difficulty, instructions)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    await client.query("BEGIN");
+
+    const recipeResult = await client.query<RecipeRow>(
+      `INSERT INTO recipes (user_id, title, description, image_url, cuisine, cooking_time, servings, difficulty, instructions)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         req.userId,
         title.trim(),
         typeof description === "string" && description.trim() ? description.trim() : null,
+        imageUrl,
         typeof cuisine === "string" && cuisine.trim() ? cuisine.trim() : null,
         cookingTime && !Number.isNaN(cookingTime) ? cookingTime : null,
         servingsNum && !Number.isNaN(servingsNum) ? servingsNum : 2,
@@ -513,7 +521,7 @@ router.post("/", async (req: Request, res: Response) => {
             Array.isArray(ing.allergens)
               ? ing.allergens.filter((a: unknown) => typeof a === "string")
               : [];
-          await pool.query(
+          await client.query(
             `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit, allergens) VALUES ($1, $2, $3, $4, $5)`,
             [
               recipe.id,
@@ -531,16 +539,20 @@ router.post("/", async (req: Request, res: Response) => {
       ? (req.body.equipment as unknown[]).filter((e): e is string => typeof e === "string")
       : [];
     for (const eq of equipment) {
-      await pool.query(
+      await client.query(
         `INSERT INTO recipe_equipment (recipe_id, equipment_name) VALUES ($1, $2)`,
         [recipe.id, eq]
       );
     }
 
+    await client.query("COMMIT");
     res.status(201).json({ recipe: rowToResponse(recipe) });
   } catch (e) {
+    await client.query("ROLLBACK");
     console.error(e);
     res.status(500).json({ error: "Failed to create recipe" });
+  } finally {
+    client.release();
   }
 });
 
@@ -549,8 +561,8 @@ router.put("/:id", async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const { title, description, cuisine, cooking_time, servings, difficulty, instructions, ingredients } = req.body as {
-    title?: unknown; description?: unknown; cuisine?: unknown;
+  const { title, description, image_url, cuisine, cooking_time, servings, difficulty, instructions, ingredients } = req.body as {
+    title?: unknown; description?: unknown; image_url?: unknown; cuisine?: unknown;
     cooking_time?: unknown; servings?: unknown; difficulty?: unknown;
     instructions?: unknown; ingredients?: unknown;
   };
@@ -561,14 +573,19 @@ router.put("/:id", async (req: Request, res: Response) => {
 
   const cookingTime = cooking_time !== undefined && cooking_time !== "" && cooking_time !== null ? Number(cooking_time) : null;
   const servingsNum = servings !== undefined && servings !== "" && servings !== null ? Number(servings) : 2;
+  const imageUrl = typeof image_url === "string" && image_url.trim() ? image_url.trim() : null;
 
+  const client = await pool.connect();
   try {
-    const result = await pool.query<RecipeRow>(
-      `UPDATE recipes SET title=$1, description=$2, cuisine=$3, cooking_time=$4, servings=$5,
-       difficulty=$6, instructions=$7, updated_at=NOW() WHERE id=$8 AND user_id=$9 RETURNING *`,
+    await client.query("BEGIN");
+
+    const result = await client.query<RecipeRow>(
+      `UPDATE recipes SET title=$1, description=$2, image_url=$3, cuisine=$4, cooking_time=$5, servings=$6,
+       difficulty=$7, instructions=$8, updated_at=NOW() WHERE id=$9 AND user_id=$10 RETURNING *`,
       [
         title.trim(),
         typeof description === "string" && description.trim() ? description.trim() : null,
+        imageUrl,
         typeof cuisine === "string" && cuisine.trim() ? cuisine.trim() : null,
         cookingTime && !Number.isNaN(cookingTime) ? cookingTime : null,
         servingsNum && !Number.isNaN(servingsNum) ? servingsNum : 2,
@@ -579,16 +596,20 @@ router.put("/:id", async (req: Request, res: Response) => {
       ]
     );
 
-    if (result.rowCount === 0) { res.status(404).json({ error: "Recipe not found" }); return; }
+    if (result.rowCount === 0) {
+      await client.query("ROLLBACK");
+      res.status(404).json({ error: "Recipe not found" });
+      return;
+    }
 
-    await pool.query("DELETE FROM recipe_ingredients WHERE recipe_id = $1", [id]);
+    await client.query("DELETE FROM recipe_ingredients WHERE recipe_id = $1", [id]);
 
     if (Array.isArray(ingredients)) {
       for (const ing of ingredients) {
         if (ing && typeof ing === "object" && typeof ing.name === "string" && ing.name.trim()) {
           const ingQty = ing.quantity !== undefined && ing.quantity !== "" && ing.quantity !== null ? Number(ing.quantity) : null;
           const allergens = Array.isArray(ing.allergens) ? ing.allergens.filter((a: unknown) => typeof a === "string") : [];
-          await pool.query(
+          await client.query(
             `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit, allergens) VALUES ($1, $2, $3, $4, $5)`,
             [
               id,
@@ -602,21 +623,25 @@ router.put("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    await pool.query("DELETE FROM recipe_equipment WHERE recipe_id = $1", [id]);
+    await client.query("DELETE FROM recipe_equipment WHERE recipe_id = $1", [id]);
     const equipment = Array.isArray(req.body.equipment)
       ? (req.body.equipment as unknown[]).filter((e): e is string => typeof e === "string")
       : [];
     for (const eq of equipment) {
-      await pool.query(
+      await client.query(
         `INSERT INTO recipe_equipment (recipe_id, equipment_name) VALUES ($1, $2)`,
         [id, eq]
       );
     }
 
+    await client.query("COMMIT");
     res.json({ recipe: rowToResponse(result.rows[0]) });
   } catch (e) {
+    await client.query("ROLLBACK");
     console.error(e);
     res.status(500).json({ error: "Failed to update recipe" });
+  } finally {
+    client.release();
   }
 });
 

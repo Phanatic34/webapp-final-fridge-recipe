@@ -33,6 +33,7 @@ export type RecommendedParams = {
 export type RecipeCreatePayload = {
   title: string;
   description?: string;
+  image_url?: string | null;
   cuisine?: string;
   cooking_time?: number | null;
   servings?: number;
