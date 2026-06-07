@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { fetchAiPick } from "../api/recipes";
 import { ProgressRing } from "./ProgressRing";
 import { CUISINE_LABELS } from "../utils/labels";
+import { RecipeImage } from "./RecipeImage";
 import type { RecipeRecommendation } from "../types/recipe";
 
 type Status = "idle" | "loading" | "done" | "error";
@@ -98,17 +99,12 @@ export function AiPickBanner({ recommendations }: { recommendations: RecipeRecom
               to={`/recipes/${pickedRec.recipe.id}`}
               className="flex flex-col gap-3 sm:flex-row sm:items-start hover:opacity-90 transition"
             >
-              {pickedRec.recipe.image_url ? (
-                <img
-                  src={pickedRec.recipe.image_url}
-                  alt={pickedRec.recipe.title}
-                  className="h-32 w-full rounded-xl object-cover sm:w-40 sm:shrink-0"
-                />
-              ) : (
-                <div className="flex h-32 w-full items-center justify-center rounded-xl bg-amber-100 text-4xl sm:w-40 sm:shrink-0">
-                  🍽️
-                </div>
-              )}
+              <RecipeImage
+                src={pickedRec.recipe.image_url}
+                title={pickedRec.recipe.title}
+                imgClassName="h-32 w-full rounded-xl object-cover sm:w-40 sm:shrink-0"
+                placeholderClassName="flex h-32 w-full items-center justify-center rounded-xl bg-amber-100 text-4xl sm:w-40 sm:shrink-0"
+              />
 
               <div className="flex flex-col gap-2 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">

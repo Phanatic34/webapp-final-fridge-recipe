@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Layout } from "../components/Layout";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
+import { RecipeImage } from "../components/RecipeImage";
 import { useRecipeDetail, useRecommendedRecipesList, useDeleteRecipe } from "../hooks/useRecipes";
 import { useIngredientsList } from "../hooks/useIngredients";
 import { useAddFavorite, useFavoritesList, useRemoveFavorite } from "../hooks/useFavorites";
@@ -115,17 +116,13 @@ export default function RecipeDetailPage() {
 
         {recipe && (
           <>
-            {recipe.image_url ? (
-              <img
-                src={recipe.image_url}
-                alt={recipe.title}
-                className="w-full rounded-2xl object-cover max-h-64"
-              />
-            ) : (
-              <div className="flex w-full items-center justify-center rounded-2xl bg-app-surface text-6xl" style={{ height: "12rem" }}>
-                🍽️
-              </div>
-            )}
+            <RecipeImage
+              src={recipe.image_url}
+              title={recipe.title}
+              imgClassName="w-full rounded-2xl object-cover max-h-64"
+              placeholderClassName="flex w-full items-center justify-center rounded-2xl bg-app-surface text-6xl"
+              placeholderStyle={{ height: "12rem" }}
+            />
 
             <div>
               <div className="flex items-start justify-between gap-3">

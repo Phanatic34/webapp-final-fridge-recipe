@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Layout } from "../components/Layout";
 import { ProgressRing } from "../components/ProgressRing";
 import { AiPickBanner } from "../components/AiPickBanner";
+import { RecipeImage } from "../components/RecipeImage";
 import { useRecommendedRecipesList, useRecipesList } from "../hooks/useRecipes";
 import { useAddFavorite, useFavoritesList, useRemoveFavorite } from "../hooks/useFavorites";
 import type { Recipe, RecipeRecommendation } from "../types/recipe";
@@ -69,11 +70,12 @@ function AllRecipeCard({ recipe, favorited, onToggleFavorite }: { recipe: Recipe
       to={`/recipes/${recipe.id}`}
       className="group flex h-[440px] flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-app-border transition hover:-translate-y-0.5 hover:shadow-md"
     >
-      {recipe.image_url ? (
-        <img src={recipe.image_url} alt={recipe.title} className="h-36 w-full object-cover" />
-      ) : (
-        <div className="flex h-36 w-full items-center justify-center bg-app-surface text-4xl">🍽️</div>
-      )}
+      <RecipeImage
+        src={recipe.image_url}
+        title={recipe.title}
+        imgClassName="h-36 w-full object-cover"
+        placeholderClassName="flex h-36 w-full items-center justify-center bg-app-surface text-4xl"
+      />
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
@@ -133,17 +135,12 @@ function RecommendationCard({ rec, favorited, onToggleFavorite }: { rec: RecipeR
       to={`/recipes/${rec.recipe.id}`}
       className={`group flex h-[440px] flex-col overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ring}`}
     >
-      {rec.recipe.image_url ? (
-        <img
-          src={rec.recipe.image_url}
-          alt={rec.recipe.title}
-          className="h-36 w-full object-cover"
-        />
-      ) : (
-        <div className="flex h-36 w-full items-center justify-center bg-app-surface text-4xl">
-          🍽️
-        </div>
-      )}
+      <RecipeImage
+        src={rec.recipe.image_url}
+        title={rec.recipe.title}
+        imgClassName="h-36 w-full object-cover"
+        placeholderClassName="flex h-36 w-full items-center justify-center bg-app-surface text-4xl"
+      />
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
