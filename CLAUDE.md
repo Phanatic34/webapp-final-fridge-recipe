@@ -33,6 +33,8 @@ No test runner is configured; there are no test scripts.
 - Docker maps PostgreSQL to **port 5433** (not the default 5432) to avoid conflicts with any native PostgreSQL installation on the host machine.
 - `backend/.env` must exist before running the backend. Copy from `backend/.env.example` — the values in the example file match the Docker Compose config and work out of the box.
 - `OPENAI_API_KEY` must be set in `backend/.env` for AI explanations to work. Without it, `ai_explanation` returns `""` and the UI falls back silently.
+- `JWT_SECRET` should be set in `backend/.env` for production. Falls back to `"dev-secret-change-in-prod"` if unset.
+- If `npm run db:seed` (or any backend connection) errors with `password authentication failed`, the Docker volume was initialized with different credentials. Same fix: `docker compose down -v && docker compose up -d`, then re-run seed.
 - If `npm run db:seed` errors with `database does not exist`, the Docker volume likely has stale data from a previous setup. Fix: `docker compose down -v && docker compose up -d`, then re-run seed.
 - If port 3001 is already in use (`EADDRINUSE`), another project's backend container may be running. Kill it with `lsof -ti:3001 | xargs kill`.
 
@@ -43,23 +45,26 @@ No test runner is configured; there are no test scripts.
 - **AI**: OpenAI `gpt-4o-mini` via `openai` SDK — generates natural language recommendation explanations
 - **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS + framer-motion (spring animations, stagger, AnimatePresence). Entry: `frontend/src/main.tsx`
 - **Database**: PostgreSQL via `pg` pool (`backend/src/db/pool.ts`)
-- **Frontend → Backend**: Vite proxies `/api/*` to `http://localhost:3001`; axios client at `frontend/src/api/client.ts` uses empty `baseURL` to leverage the proxy
+- **Auth**: JWT-based (`jsonwebtoken` + `bcrypt`). `requireAuth` middleware (`backend/src/middleware/auth.ts`) extracts `userId` (UUID) from `Authorization: Bearer <token>`. All routes except `/api/health` and `/api/auth` require a valid token.
+- **Frontend → Backend**: Vite proxies `/api/*` to `http://localhost:3001`; axios client at `frontend/src/api/client.ts` reads `VITE_API_URL` (defaults to `""`) and injects the Bearer token from `localStorage` on every request via an interceptor.
 
 ### Backend layout
 ```
 src/
   server.ts            # Express app, mounts all routers
   routes/
+    auth.ts            # POST /register, POST /login, GET /me, PATCH /me (display_name + password)
     ingredients.ts     # CRUD for fridge inventory
-    recipes.ts         # recipe list, detail, and recommendation engine
+    recipes.ts         # recipe list, detail, create, edit, and recommendation engine
     favorites.ts       # add/remove/list saved recipes
     settings.ts        # equipment + exclusion CRUD; exports PREDEFINED_EQUIPMENT, PREDEFINED_ALLERGENS
     shopping-list.ts   # shopping list CRUD (add from recipe, toggle checked, delete, clear checked)
+  middleware/
+    auth.ts            # requireAuth — verifies JWT, sets req.userId (UUID string)
+    validate.ts        # validateBody<T>(schema) — Zod request body middleware
   types/
     ingredient.ts      # Zod schemas + TS types + enums (UNITS, CATEGORIES, STATUSES, NEAR_EXPIRY_DAYS)
     recipe.ts          # TS types for recipes, ingredients, recommendations
-  middleware/
-    validate.ts        # validateBody<T>(schema) — Zod middleware
   utils/
     expiry.ts          # computeExpiryMeta() — UTC date-only comparison for expiry logic
     llmExplanation.ts  # generateAiExplanation() — calls OpenAI gpt-4o-mini with few-shot prompt to produce Traditional Chinese recommendation explanation from scored recipe data
@@ -72,9 +77,15 @@ src/
 ### Frontend layout
 ```
 src/
-  App.tsx              # React Router routes: /, /recipes, /recipes/:id, /favorites, /settings
+  App.tsx              # React Router routes; all routes except /login and /register are wrapped in
+                       # ProtectedRoute (redirects to /login if not authenticated)
+                       # Routes: /, /recipes, /recipes/new, /recipes/:id/edit, /recipes/:id,
+                       #         /favorites, /shopping-list, /settings, /login, /register
+  context/
+    AuthContext.tsx    # AuthProvider + useAuth hook; persists token/user in localStorage under
+                       # keys "fridge_token" and "fridge_user"
   api/
-    client.ts          # axios instance; normalizes error messages from backend
+    client.ts          # axios instance; injects Bearer token from localStorage; normalizes errors
     ingredients.ts     # API functions for ingredient CRUD
     recipes.ts         # API functions for recipe list, detail, recommendations (accepts RecommendedParams)
     favorites.ts       # API functions for favorites
@@ -85,11 +96,13 @@ src/
     useRecipes.ts      # TanStack Query hooks wrapping recipes API
     useFavorites.ts    # TanStack Query hooks wrapping favorites API
     useSettings.ts     # useSettings, useUpdateEquipment, useAddExclusion, useRemoveExclusion
-    useShoppingList.ts # useShoppingList, useAddFromRecipe, useToggleShoppingItem, useDeleteShoppingItem, useClearCheckedItems
+    useShoppingList.ts # useShoppingList, useAddFromRecipe, useToggleShoppingItem, useUpdateShoppingItemQuantity, useDeleteShoppingItem, useClearCheckedItems
   types/
+    auth.ts            # AuthUser { id: string; email: string; display_name: string }, AuthState
     settings.ts        # Settings interface
     shoppingList.ts    # ShoppingListItem interface
-  pages/               # FridgePage, RecipesPage, RecipeDetailPage, FavoritesPage, SettingsPage
+  pages/               # LoginPage, RegisterPage, FridgePage, RecipesPage, RecipeDetailPage,
+                       #   RecipeCreatePage, RecipeEditPage, FavoritesPage, SettingsPage, ShoppingListPage
                        # RecipesPage: toggle between "推薦食譜" (recommended, match>0) and "全部食譜"
                        #   (all recipes via useRecipesList); empty recommended state shows "瀏覽全部食譜" button;
                        #   time filter options: null/15/30/45/60 min; cuisine filter works in both modes
@@ -99,11 +112,17 @@ src/
                        #   instructions rendered as numbered steps (strips leading "N." from seed data)
                        # SettingsPage: shopping list items have "加入冰箱" button — calls useCreateIngredient
                        #   with quantity parsed from string (defaults to 1) and unit (defaults to "pieces")
+                       # ShoppingListPage: inline quantity editing, expiry date picker per item, expand
+                       #   "source recipes" panel; "加入冰箱" converts checked items into ingredients
   components/          # Shared UI: Layout, IngredientCard, FormModal, ExpiryBadge, etc.
                        # ProgressRing.tsx — SVG circular progress ring (props: ratio 0-1, size, strokeWidth)
   hooks/
     useCountUp.ts      # count-up animation hook (target: number, duration?: number) → animated number
+  types/
+    ingredient.ts      # mirrors backend enums (CATEGORIES, STATUSES, UNITS, NEAR_EXPIRY_DAYS) + Zod form
+                       # schema; must be kept in sync with backend/src/types/ingredient.ts manually
   utils/
+    expiry.ts          # client-side computeExpiryMeta() — same UTC date-only logic as backend util
     labels.ts          # Traditional Chinese display labels for category/status/cuisine/difficulty enums
                        # (DB enum values stay English; only display strings are translated here)
 ```
@@ -126,8 +145,13 @@ Filters applied before scoring (in order):
 
 Near-expiry threshold is `NEAR_EXPIRY_DAYS = 3` (defined in `backend/src/types/ingredient.ts`).
 
+### Auth flow
+- Register/login return `{ token, user }`. The frontend stores both in `localStorage` via `AuthContext`.
+- Every subsequent API request sends `Authorization: Bearer <token>` (injected by the axios interceptor).
+- `requireAuth` verifies the JWT and sets `req.userId` (UUID string) on the request — all route handlers use `req.userId` instead of a hardcoded value.
+- `users.id` is `UUID` (generated by `gen_random_uuid()`); all foreign-key columns that reference it are also `UUID`.
+
 ### Data model notes
-- `user_id` is hardcoded to `1` throughout (no auth yet — single-user MVP)
 - `ingredients.expiry_date` is stored as `DATE`; `computeExpiryMeta` always compares UTC date-only to avoid timezone drift
 - `recipe_ingredients.name` matching against `ingredients.name` is **case-insensitive lowercase** (`ri.name.toLowerCase()`)
 - `user_exclusions.name` is stored and queried as lowercase; equipment names are also lowercased in memory for comparison
