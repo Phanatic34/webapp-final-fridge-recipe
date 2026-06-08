@@ -60,5 +60,6 @@ export function useRecommendedRecipesList(params: RecommendedParams = {}) {
     queryKey: ["recipes", "recommended", params.maxTime ?? "all"] as const,
     queryFn: () => fetchRecommendedRecipes(params),
     placeholderData: keepPreviousData,
+    staleTime: 0,
   });
 }

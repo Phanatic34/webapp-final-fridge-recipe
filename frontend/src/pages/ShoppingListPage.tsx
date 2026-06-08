@@ -486,6 +486,10 @@ function quantityPayloadFromShoppingItem(item: {
   const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
   const unit = item.unit ?? "pieces";
 
+  if (unit === "小匙" || unit === "大匙") {
+    return { count_quantity: 1, count_unit: "份", measure_quantity: null, measure_unit: null };
+  }
+
   if (MEASURE_UNITS.has(unit)) {
     return {
       count_quantity: null,

@@ -16,7 +16,8 @@ export function useUpdateEquipment() {
     mutationFn: updateEquipment,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["settings"] });
-      qc.invalidateQueries({ queryKey: ["recipes"] });
+      qc.invalidateQueries({ queryKey: ["recipes"], refetchType: "all" });
+      qc.removeQueries({ queryKey: ["recipes", "recommended"] });
     },
   });
 }
@@ -28,7 +29,7 @@ export function useAddExclusion() {
       addExclusion(name, type),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["settings"] });
-      qc.invalidateQueries({ queryKey: ["recipes"] });
+      qc.removeQueries({ queryKey: ["recipes", "recommended"] });
     },
   });
 }
@@ -39,7 +40,7 @@ export function useRemoveExclusion() {
     mutationFn: (name: string) => removeExclusion(name),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["settings"] });
-      qc.invalidateQueries({ queryKey: ["recipes"] });
+      qc.removeQueries({ queryKey: ["recipes", "recommended"] });
     },
   });
 }
