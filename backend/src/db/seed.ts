@@ -1618,8 +1618,8 @@ async function seedRecipes(userId: string, recipeList: RecipeSeed[]) {
 
   for (const r of recipeList) {
     const result = await pool.query<{ id: number }>(
-      `INSERT INTO recipes (user_id, title, description, cuisine, cooking_time, servings, difficulty, instructions, image_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+      `INSERT INTO recipes (user_id, title, description, cuisine, cooking_time, servings, difficulty, instructions, image_url, is_public)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE) RETURNING id`,
       [userId, r.title, r.description, r.cuisine, r.cooking_time, r.servings, r.difficulty, r.instructions, getRecipeImageUrl(r)]
     );
     const recipeId = result.rows[0].id;

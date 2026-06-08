@@ -16,6 +16,8 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 
 export type RecipeRow = {
   id: number;
+  user_id: string;
+  is_public: boolean;
   title: string;
   description: string | null;
   image_url: string | null;
@@ -57,6 +59,9 @@ export type RecipeResponse = {
   created_at: string;
   updated_at: string;
   allergen_summary: string[];
+  is_public: boolean;
+  owner_name: string | null;
+  is_owner: boolean;
 };
 
 export type RecipeDetailResponse = RecipeResponse & {

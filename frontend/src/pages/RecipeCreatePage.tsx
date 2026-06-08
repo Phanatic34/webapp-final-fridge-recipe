@@ -34,6 +34,7 @@ export default function RecipeCreatePage() {
     { id: nextId++, name: "", quantity: "", unit: "", allergens: [] },
   ]);
   const [equipment, setEquipment] = useState<string[]>([]);
+  const [isPublic, setIsPublic] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [autoDetecting, setAutoDetecting] = useState<Record<number, boolean>>({});
   const [batchDetecting, setBatchDetecting] = useState(false);
@@ -166,6 +167,7 @@ export default function RecipeCreatePage() {
         instructions: instructions.trim() || undefined,
         ingredients: validIngredients,
         equipment,
+        is_public: isPublic,
       },
       {
         onSuccess: (recipe) => {
@@ -309,6 +311,20 @@ export default function RecipeCreatePage() {
                   className="rounded-lg border border-app-border px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none focus:ring-1 focus:ring-app-primary"
                 />
               </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-app-muted">{isPublic ? "公開食譜" : "私人食譜"}</p>
+                <p className="text-xs text-app-muted">{isPublic ? "所有使用者可看到此食譜" : "只有自己可以看到此食譜"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPublic((v) => !v)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isPublic ? "bg-app-primary" : "bg-gray-300"}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isPublic ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
             </div>
           </section>
 

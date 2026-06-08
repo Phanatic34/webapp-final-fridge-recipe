@@ -7,7 +7,10 @@ const router = Router();
 
 
 
-function rowToResponse(row: RecipeRow & { allergen_summary?: string[] }): RecipeResponse {
+function rowToResponse(
+  row: RecipeRow & { allergen_summary?: string[]; owner_name?: string | null },
+  requestUserId?: string
+): RecipeResponse {
   return {
     id: row.id,
     title: row.title,
@@ -20,22 +23,26 @@ function rowToResponse(row: RecipeRow & { allergen_summary?: string[] }): Recipe
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
     allergen_summary: row.allergen_summary ?? [],
+    is_public: row.is_public,
+    owner_name: row.owner_name ?? null,
+    is_owner: requestUserId ? row.user_id === requestUserId : false,
   };
 }
 
 /** GET /api/favorites */
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const result = await pool.query<RecipeRow>(
-      `SELECT r.*
+    const result = await pool.query<RecipeRow & { owner_name: string | null }>(
+      `SELECT r.*, u.display_name AS owner_name
        FROM favorites f
        JOIN recipes r ON r.id = f.recipe_id
+       JOIN users u ON u.id = r.user_id
        WHERE f.user_id = $1
        ORDER BY f.created_at DESC`,
       [req.userId]
     );
 
-    res.json({ recipes: result.rows.map(rowToResponse) });
+    res.json({ recipes: result.rows.map((row) => rowToResponse(row, req.userId)) });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "無法取得收藏清單" });
@@ -51,8 +58,11 @@ router.post("/:recipeId", async (req: Request, res: Response) => {
   }
 
   try {
-    const recipeResult = await pool.query<RecipeRow>(
-      `SELECT * FROM recipes WHERE id = $1 AND user_id = $2`,
+    const recipeResult = await pool.query<RecipeRow & { owner_name: string | null }>(
+      `SELECT r.*, u.display_name AS owner_name
+       FROM recipes r
+       JOIN users u ON u.id = r.user_id
+       WHERE r.id = $1 AND (r.is_public = TRUE OR r.user_id = $2)`,
       [recipeId, req.userId]
     );
 
@@ -68,7 +78,7 @@ router.post("/:recipeId", async (req: Request, res: Response) => {
       [req.userId, recipeId]
     );
 
-    res.status(201).json({ recipe: rowToResponse(recipeResult.rows[0]) });
+    res.status(201).json({ recipe: rowToResponse(recipeResult.rows[0], req.userId) });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "無法新增收藏" });

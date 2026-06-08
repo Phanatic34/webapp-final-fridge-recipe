@@ -111,11 +111,13 @@ CREATE TABLE IF NOT EXISTS recipes (
   servings        INTEGER DEFAULT 2,
   difficulty      VARCHAR(50) DEFAULT 'medium',
   instructions    TEXT,
+  is_public       BOOLEAN NOT NULL DEFAULT TRUE,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 ALTER TABLE recipes ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT TRUE;
 CREATE INDEX IF NOT EXISTS idx_recipes_user_id ON recipes(user_id);
 
 CREATE TABLE IF NOT EXISTS recipe_ingredients (

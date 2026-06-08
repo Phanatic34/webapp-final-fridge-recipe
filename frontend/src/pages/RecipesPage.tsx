@@ -68,7 +68,7 @@ function AllRecipeCard({ recipe, favorited, onToggleFavorite }: { recipe: Recipe
   return (
     <Link
       to={`/recipes/${recipe.id}`}
-      className="group flex h-[440px] flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-app-border transition hover:-translate-y-0.5 hover:shadow-md"
+      className="group flex min-h-[440px] flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-app-border transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <RecipeImage
         src={recipe.image_url}
@@ -78,9 +78,14 @@ function AllRecipeCard({ recipe, favorited, onToggleFavorite }: { recipe: Recipe
       />
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
-            {recipe.title}
-          </h3>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
+              {recipe.title}
+            </h3>
+            {recipe.owner_name && (
+              <p className="truncate text-xs text-app-muted">{recipe.owner_name}</p>
+            )}
+          </div>
           <div className="flex shrink-0 items-center gap-1">
             {recipe.cuisine && (
               <span className="rounded bg-app-surface px-2 py-0.5 text-xs font-medium text-app-text">
@@ -133,7 +138,7 @@ function RecommendationCard({ rec, favorited, onToggleFavorite }: { rec: RecipeR
   return (
     <Link
       to={`/recipes/${rec.recipe.id}`}
-      className={`group flex h-[440px] flex-col overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ring}`}
+      className={`group flex min-h-[440px] flex-col overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ring}`}
     >
       <RecipeImage
         src={rec.recipe.image_url}
@@ -143,9 +148,14 @@ function RecommendationCard({ rec, favorited, onToggleFavorite }: { rec: RecipeR
       />
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
-            {rec.recipe.title}
-          </h3>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-lg font-semibold leading-tight text-app-text group-hover:text-app-primary">
+              {rec.recipe.title}
+            </h3>
+            {rec.recipe.owner_name && (
+              <p className="truncate text-xs text-app-muted">{rec.recipe.owner_name}</p>
+            )}
+          </div>
           <div className="flex shrink-0 items-center gap-1">
             {rec.recipe.cuisine && (
               <span className="rounded bg-app-surface px-2 py-0.5 text-xs font-medium text-app-text">

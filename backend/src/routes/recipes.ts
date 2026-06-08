@@ -17,7 +17,10 @@ import type {
 const router = Router();
 
 
-function rowToResponse(row: RecipeRow & { allergen_summary?: string[] }): RecipeResponse {
+function rowToResponse(
+  row: RecipeRow & { allergen_summary?: string[]; owner_name?: string | null },
+  requestUserId?: string
+): RecipeResponse {
   return {
     id: row.id,
     title: row.title,
@@ -30,6 +33,9 @@ function rowToResponse(row: RecipeRow & { allergen_summary?: string[] }): Recipe
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
     allergen_summary: row.allergen_summary ?? [],
+    is_public: row.is_public,
+    owner_name: row.owner_name ?? null,
+    is_owner: requestUserId ? row.user_id === requestUserId : false,
   };
 }
 
@@ -139,14 +145,19 @@ function isSufficientQty(
 }
 
 type RecipeWithIngredients = RecipeRow & {
+  owner_name: string | null;
   ingredientRows: RecipeIngredientRow[];
 };
 
 async function loadAllRecipesWithIngredients(userId: string): Promise<
   RecipeWithIngredients[]
 > {
-  const recipesResult = await pool.query<RecipeRow>(
-    `SELECT * FROM recipes WHERE user_id = $1 ORDER BY title`,
+  const recipesResult = await pool.query<RecipeRow & { owner_name: string | null }>(
+    `SELECT r.*, u.display_name AS owner_name
+     FROM recipes r
+     JOIN users u ON u.id = r.user_id
+     WHERE (r.is_public = TRUE OR r.user_id = $1)
+     ORDER BY r.title`,
     [userId]
   );
 
@@ -227,7 +238,8 @@ async function loadRecipeEquipmentMap(): Promise<Map<number, string[]>> {
  */
 function scoreRecipe(
   recipe: RecipeWithIngredients,
-  itemMap: Map<string, FridgeQuantity>
+  itemMap: Map<string, FridgeQuantity>,
+  userId: string
 ): RecommendationResponse {
   const matched: string[] = [];
   const insufficient: string[] = [];
@@ -281,7 +293,7 @@ function scoreRecipe(
   }
 
   return {
-    recipe: rowToResponse(recipe),
+    recipe: rowToResponse(recipe, userId),
     ingredients: recipe.ingredientRows.map(ingredientRowToResponse),
     match_count: matched.length,
     total_ingredients: total,
@@ -351,7 +363,7 @@ router.get("/recommended", async (req: Request, res: Response) => {
 
         return true;
       })
-      .map((r) => scoreRecipe(r, fridge.itemMap))
+      .map((r) => scoreRecipe(r, fridge.itemMap, req.userId))
       .filter((r) => r.match_count + r.insufficient_ingredients.length > 0);
 
     scored.sort((a, b) => {
@@ -454,6 +466,7 @@ router.post("/", async (req: Request, res: Response) => {
     difficulty,
     instructions,
     ingredients,
+    is_public,
   } = req.body as {
     title?: unknown;
     description?: unknown;
@@ -464,6 +477,7 @@ router.post("/", async (req: Request, res: Response) => {
     difficulty?: unknown;
     instructions?: unknown;
     ingredients?: unknown;
+    is_public?: unknown;
   };
 
   if (typeof title !== "string" || !title.trim()) {
@@ -486,9 +500,10 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     await client.query("BEGIN");
 
+    const isPublicVal = is_public === true;
     const recipeResult = await client.query<RecipeRow>(
-      `INSERT INTO recipes (user_id, title, description, image_url, cuisine, cooking_time, servings, difficulty, instructions)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO recipes (user_id, title, description, image_url, cuisine, cooking_time, servings, difficulty, instructions, is_public)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         req.userId,
@@ -500,6 +515,7 @@ router.post("/", async (req: Request, res: Response) => {
         servingsNum && !Number.isNaN(servingsNum) ? servingsNum : 2,
         typeof difficulty === "string" && difficulty.trim() ? difficulty.trim() : "medium",
         typeof instructions === "string" && instructions.trim() ? instructions.trim() : null,
+        isPublicVal,
       ]
     );
 
@@ -546,7 +562,7 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     await client.query("COMMIT");
-    res.status(201).json({ recipe: rowToResponse(recipe) });
+    res.status(201).json({ recipe: rowToResponse({ ...recipe, owner_name: null }, req.userId) });
   } catch (e) {
     await client.query("ROLLBACK");
     console.error(e);
@@ -561,10 +577,10 @@ router.put("/:id", async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const { title, description, image_url, cuisine, cooking_time, servings, difficulty, instructions, ingredients } = req.body as {
+  const { title, description, image_url, cuisine, cooking_time, servings, difficulty, instructions, ingredients, is_public } = req.body as {
     title?: unknown; description?: unknown; image_url?: unknown; cuisine?: unknown;
     cooking_time?: unknown; servings?: unknown; difficulty?: unknown;
-    instructions?: unknown; ingredients?: unknown;
+    instructions?: unknown; ingredients?: unknown; is_public?: unknown;
   };
 
   if (typeof title !== "string" || !title.trim()) {
@@ -579,9 +595,10 @@ router.put("/:id", async (req: Request, res: Response) => {
   try {
     await client.query("BEGIN");
 
+    const isPublicVal = is_public === true;
     const result = await client.query<RecipeRow>(
       `UPDATE recipes SET title=$1, description=$2, image_url=$3, cuisine=$4, cooking_time=$5, servings=$6,
-       difficulty=$7, instructions=$8, updated_at=NOW() WHERE id=$9 AND user_id=$10 RETURNING *`,
+       difficulty=$7, instructions=$8, is_public=$9, updated_at=NOW() WHERE id=$10 AND user_id=$11 RETURNING *`,
       [
         title.trim(),
         typeof description === "string" && description.trim() ? description.trim() : null,
@@ -591,6 +608,7 @@ router.put("/:id", async (req: Request, res: Response) => {
         servingsNum && !Number.isNaN(servingsNum) ? servingsNum : 2,
         typeof difficulty === "string" && difficulty.trim() ? difficulty.trim() : "medium",
         typeof instructions === "string" && instructions.trim() ? instructions.trim() : null,
+        isPublicVal,
         id,
         req.userId,
       ]
@@ -635,7 +653,7 @@ router.put("/:id", async (req: Request, res: Response) => {
     }
 
     await client.query("COMMIT");
-    res.json({ recipe: rowToResponse(result.rows[0]) });
+    res.json({ recipe: rowToResponse({ ...result.rows[0], owner_name: null }, req.userId) });
   } catch (e) {
     await client.query("ROLLBACK");
     console.error(e);
@@ -665,14 +683,14 @@ router.get("/", async (req: Request, res: Response) => {
     const cuisine = req.query.cuisine as string | undefined;
 
     const params: unknown[] = [req.userId];
-    let where = "WHERE r.user_id = $1";
+    let where = "WHERE (r.is_public = TRUE OR r.user_id = $1)";
     if (cuisine && cuisine !== "all") {
       params.push(cuisine);
       where += ` AND LOWER(r.cuisine) = LOWER($${params.length})`;
     }
 
-    const result = await pool.query<RecipeRow & { allergen_summary: string[] }>(
-      `SELECT r.*,
+    const result = await pool.query<RecipeRow & { allergen_summary: string[]; owner_name: string | null }>(
+      `SELECT r.*, u.display_name AS owner_name,
         ARRAY(
           SELECT DISTINCT val
           FROM recipe_ingredients ri,
@@ -680,11 +698,13 @@ router.get("/", async (req: Request, res: Response) => {
           WHERE ri.recipe_id = r.id
             AND val <> ''
         ) AS allergen_summary
-       FROM recipes r ${where} ORDER BY r.title ASC`,
+       FROM recipes r
+       JOIN users u ON u.id = r.user_id
+       ${where} ORDER BY r.title ASC`,
       params
     );
 
-    res.json({ recipes: result.rows.map(rowToResponse) });
+    res.json({ recipes: result.rows.map((row) => rowToResponse(row, req.userId)) });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "無法取得食譜清單" });
@@ -700,8 +720,8 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 
   try {
-    const recipeResult = await pool.query<RecipeRow & { allergen_summary: string[] }>(
-      `SELECT r.*,
+    const recipeResult = await pool.query<RecipeRow & { allergen_summary: string[]; owner_name: string | null }>(
+      `SELECT r.*, u.display_name AS owner_name,
         ARRAY(
           SELECT DISTINCT val
           FROM recipe_ingredients ri,
@@ -709,7 +729,9 @@ router.get("/:id", async (req: Request, res: Response) => {
           WHERE ri.recipe_id = r.id
             AND val <> ''
         ) AS allergen_summary
-       FROM recipes r WHERE r.id = $1 AND r.user_id = $2`,
+       FROM recipes r
+       JOIN users u ON u.id = r.user_id
+       WHERE r.id = $1 AND (r.is_public = TRUE OR r.user_id = $2)`,
       [id, req.userId]
     );
 
@@ -732,7 +754,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     ]);
 
     const detail: RecipeDetailResponse = {
-      ...rowToResponse(row),
+      ...rowToResponse(row, req.userId),
       instructions: row.instructions,
       ingredients: ingResult.rows.map(ingredientRowToResponse),
       equipment: eqResult.rows.map((r) => r.equipment_name),

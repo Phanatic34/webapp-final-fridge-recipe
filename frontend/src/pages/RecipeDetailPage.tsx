@@ -151,22 +151,30 @@ export default function RecipeDetailPage() {
                     </svg>
                   </button>
                 </h2>
-                <div className="flex shrink-0 items-center gap-2 pt-1">
-                  <Link
-                    to={`/recipes/${recipeId}/edit`}
-                    className="rounded-lg border border-app-border bg-white px-3 py-1.5 text-sm font-medium text-app-text hover:bg-app-surface transition"
-                  >
-                    編輯
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteModal(true)}
-                    className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-app-danger hover:bg-red-50 transition"
-                  >
-                    刪除
-                  </button>
-                </div>
+                {recipe.is_owner && (
+                  <div className="flex shrink-0 items-center gap-2 pt-1">
+                    <Link
+                      to={`/recipes/${recipeId}/edit`}
+                      className="rounded-lg border border-app-border bg-white px-3 py-1.5 text-sm font-medium text-app-text hover:bg-app-surface transition"
+                    >
+                      編輯
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteModal(true)}
+                      className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-app-danger hover:bg-red-50 transition"
+                    >
+                      刪除
+                    </button>
+                  </div>
+                )}
               </div>
+              {recipe.owner_name && (
+                <p className="mt-0.5 text-xs text-app-muted">
+                  建立者：{recipe.owner_name}
+                  {!recipe.is_public && <span className="ml-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">私人</span>}
+                </p>
+              )}
               {recipe.description && (
                 <p className="mt-1 text-app-muted">{recipe.description}</p>
               )}

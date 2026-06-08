@@ -18,6 +18,9 @@ export type Recipe = {
   created_at: string;
   updated_at: string;
   allergen_summary: string[];
+  is_public: boolean;
+  owner_name: string | null;
+  is_owner: boolean;
 };
 
 export type RecipeDetail = Recipe & {
